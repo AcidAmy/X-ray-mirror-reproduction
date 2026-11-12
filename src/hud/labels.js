@@ -6,11 +6,12 @@ import { view } from "../state.js";
 import { head } from "../tracking/head.js";
 import { clipState } from "../reveal.js";
 import { jawM } from "../render/layers.js";
+import { jawWeight } from "../anatomy/jaw.js";
 
 const LABEL_COLOR = { skull: "#d9f0ff", brain: "#ffc2d6", muscles: "#ffb3aa", eyes: "#fff3a8", hands: "#d9f0ff" };
 const HEAD_C = [0, 3.2, -4.8];                    // rough centre of the head, in head coordinates (cm)
 const labelState = {};                            // text -> { side, y } so labels glide instead of jumping
-const lp = new THREE.Vector3(), ln = new THREE.Vector3(), lc = new THREE.Vector3();
+const lp = new THREE.Vector3(), ln = new THREE.Vector3(), lc = new THREE.Vector3(), lj = new THREE.Vector3();
 let frameNo = 0, headSplit = 0;
 
 function toScreen(v) {                            // head/view-space point -> heads-up layer pixels (mirrored like the picture)
@@ -26,7 +27,9 @@ function collectHeadLabels(lens) {
     if (solid && S.skull && L.layer === "brain") continue;                               // hidden inside the skull
     let best = null;
     for (const p of L.pts) {
-      lp.fromArray(p); if (L.jaw) lp.applyMatrix4(jawM);
+      lp.fromArray(p);
+      if (L.jaw) lp.applyMatrix4(jawM);
+      else if (L.layer === "muscles") { const w = jawWeight(R.META.jawPivot, p[0], p[1], p[2]); if (w > 0) lp.lerp(lj.fromArray(p).applyMatrix4(jawM), w); }
       if (clipState.on && clipState.x * lp.x + clipState.y * lp.y < clipState.w) continue;   // cut away
       ln.set(lp.x - HEAD_C[0], lp.y - HEAD_C[1], lp.z - HEAD_C[2]).transformDirection(M);
       lp.applyMatrix4(M);

@@ -8,7 +8,10 @@ import { OneEuro, OneEuroVec3, OneEuroQuat, stepSeconds } from "../filters.js";
 import { TUNE } from "../tuning.js";
 
 export const head = { found: false, pos: new THREE.Vector3(), quat: new THREE.Quaternion(), scl: new THREE.Vector3(1, 1, 1),
-                      fitS: 1, fitX: 0, fitY: 0, jaw: 0, lms: null,
+                      fitS: 1, fitX: 0, fitY: 0, lms: null,
+                      jaw: 0,          // the tracker's "jawOpen" score, 0..1
+                      jawAngle: 0,     // how far the jaw bone is swung open, radians
+                      jawRest: null,   // this person's chin position with the mouth shut, as a jaw angle (null = not known yet)
                       // where each eye looks, radians: yaw > 0 towards the person's left, pitch > 0 downwards
                       gaze: { yawL: 0, pitchL: 0, yawR: 0, pitchR: 0 },
                       // automatic head-shape fit: how much wider / taller / deeper this person's head is than the model
@@ -23,10 +26,14 @@ let lastT = 0, lastSeenT = -1e9;
 
 // Face landmark numbers that have a known matching position on the anatomy model (eye corners, nose, chin, ...).
 export const fitIds = [];
+// Chin and mouth corners move when the mouth opens. They must not take part in pinning the head to the face,
+// or an opening mouth would stretch and shift the whole skull; the chin drives the jaw instead.
+const JAW_POINTS = new Set([152, 61, 291]), CHIN = 152;
+const chin0 = new THREE.Vector3(), chin1 = new THREE.Vector3();
 export function initHead(META) { fitIds.length = 0; for (const k of Object.keys(META.fit)) fitIds.push(Number(k)); }
 
 export function resetHead() { head.found = false; head.lms = null; head.jaw = 0; lastSeenT = -1e9; resetAutoFit(); }
-function resetAutoFit() { head.autoW = head.autoH = head.autoD = 1; head.autoN = 0; }
+function resetAutoFit() { head.autoW = head.autoH = head.autoD = 1; head.autoN = 0; head.jawRest = null; }
 
 // Turns the tracker's eye "blendshape" scores (each 0..1) into eye angles.
 // Names follow the person: eyeLookOutLeft = their left eye looking further to their left.
@@ -49,12 +56,12 @@ export function updateHead(matrixData, lms, jawOpen, now, gaze) {
   if (now - lastSeenT > TUNE.autoFit.resetAfterMs) resetAutoFit();     // a new person: measure their head afresh
   lastT = lastSeenT = now;
   if (fresh) {
-    head.pos.copy(tmpP); head.quat.copy(tmpQ); head.scl.copy(tmpS); head.fitS = 1; head.fitX = head.fitY = 0; head.jaw = jawOpen;
-    fPos.reset(); fScl.reset(); fRot.reset(); fFitS.reset(1); fFitX.reset(0); fFitY.reset(0); fJaw.reset(jawOpen);
+    head.pos.copy(tmpP); head.quat.copy(tmpQ); head.scl.copy(tmpS); head.fitS = 1; head.fitX = head.fitY = 0;
+    fPos.reset(); fScl.reset(); fRot.reset(); fFitS.reset(1); fFitX.reset(0); fFitY.reset(0); fJaw.reset();
   } else {
     fPos.step(head.pos, tmpP, dt); fRot.step(head.quat, tmpQ, dt); fScl.step(head.scl, tmpS, dt);
-    head.jaw = fJaw.filter(jawOpen, dt);
   }
+  head.jaw = jawOpen;
   for (const k in fGaze) {
     const target = gaze ? gaze[k] : 0;
     if (fresh) { fGaze[k].reset(target); head.gaze[k] = target; } else head.gaze[k] = fGaze[k].filter(target, dt);
@@ -67,11 +74,14 @@ export function updateHead(matrixData, lms, jawOpen, now, gaze) {
   tmpM.compose(head.pos, head.quat, head.scl);           // smoothed pose
 
   // Pin the model to the face on screen: compare where key face points land with where the tracker saw them.
-  let pmx = 0, pmy = 0, qmx = 0, qmy = 0; const P = [], Q = [];
+  // P/Q: the points that are rigid on the skull (used for pinning). allP/allQ: every point (used for head shape).
+  let pmx = 0, pmy = 0, qmx = 0, qmy = 0; const P = [], Q = [], allP = [], allQ = [];
   for (const id of fitIds) {
     tmpV.fromArray(META.fit[id]).applyMatrix4(tmpM).applyMatrix4(baseProj);
     const q = lms[id]; if (!q) continue;
-    P.push([tmpV.x, tmpV.y]); Q.push([q.x * 2 - 1, 1 - q.y * 2]);
+    const a = [tmpV.x, tmpV.y], b = [q.x * 2 - 1, 1 - q.y * 2];
+    allP.push(a); allQ.push(b);
+    if (!JAW_POINTS.has(id)) { P.push(a); Q.push(b); }
   }
   if (P.length) {
     for (let i = 0; i < P.length; i++) { pmx += P[i][0]; pmy += P[i][1]; qmx += Q[i][0]; qmy += Q[i][1]; }
@@ -85,7 +95,7 @@ export function updateHead(matrixData, lms, jawOpen, now, gaze) {
     head.fitS = fFitS.filter(s, dt);
     head.fitX = fFitX.filter(qmx - head.fitS * pmx, dt);
     head.fitY = fFitY.filter(qmy - head.fitS * pmy, dt);
-    if (S.autofit) sampleHeadShape(P, Q, pmx, pmy, qmx, qmy, jawOpen); else resetAutoFit();
+    if (S.autofit) sampleHeadShape(allP, allQ, jawOpen); else { head.autoW = head.autoH = head.autoD = 1; head.autoN = 0; }
   }
   corr.set(head.fitS, 0, 0, head.fitX,  0, head.fitS, 0, head.fitY,  0, 0, 1, 0,  0, 0, 0, 1);
   cam.projectionMatrix.copy(baseProj).premultiply(corr);
@@ -97,16 +107,43 @@ export function updateHead(matrixData, lms, jawOpen, now, gaze) {
   headGroup.matrix.copy(tmpM).multiply(fitM);
   headGroup.matrixWorldNeedsUpdate = true;          // we set the matrix by hand, so tell three.js it changed
   headGroup.visible = true;
-  jawPivot.rotation.x = Math.min(1, Math.max(0, head.jaw)) * 0.36;
+
+  // Jaw. Swing the model's chin about the jaw joint until it lands on the tracked chin: project the chin for a shut
+  // jaw and for a jaw opened by a test angle, and see how far along that path the tracked chin lies. Chins differ
+  // between people, so the angle measured while the mouth is shut is remembered as this person's rest and taken off.
+  const J = TUNE.jawFit, TEST = 0.3, chin = lms[CHIN];
+  let angle = Math.min(1, Math.max(0, jawOpen)) * J.fallbackAngle;
+  if (chin && META.fit[CHIN]) {
+    const piv = META.jawPivot, c = META.fit[CHIN];
+    const project = (theta, out) => {
+      const y = c[1] - piv[1], z = c[2] - piv[2], cs = Math.cos(theta), sn = Math.sin(theta);
+      out.set(c[0], piv[1] + y * cs - z * sn, piv[2] + y * sn + z * cs).applyMatrix4(headGroup.matrix).applyMatrix4(cam.projectionMatrix);
+      out.x *= view.W / 2; out.y *= view.H / 2;            // to pixels, so both screen axes count equally
+    };
+    project(0, chin0); project(TEST, chin1);
+    const dx = chin1.x - chin0.x, dy = chin1.y - chin0.y, d2 = dx * dx + dy * dy;
+    if (d2 > 1e-6) {
+      const qx = (chin.x * 2 - 1) * view.W / 2, qy = (1 - chin.y * 2) * view.H / 2;
+      const raw = TEST * ((qx - chin0.x) * dx + (qy - chin0.y) * dy) / d2;
+      if (jawOpen < J.closedBelow) head.jawRest = head.jawRest === null ? raw : head.jawRest + (raw - head.jawRest) * 0.08;
+      if (head.jawRest !== null) angle = raw - head.jawRest;
+    }
+  }
+  angle = Math.min(J.maxAngle, Math.max(0, angle));
+  head.jawAngle = fresh ? (fJaw.reset(angle), angle) : fJaw.filter(angle, dt);
+  jawPivot.rotation.x = head.jawAngle;
 }
 
 // Automatic head-shape fit. The screen fit above finds one overall scale; what is left over is how this person's
 // face differs in proportion from the model's. Measure that along the head's own left-right and up-down directions:
 // P = where the model's key points land, Q = where the tracker saw them (both in screen coordinates).
 // Only near-frontal, mouth-closed frames are used, and the result is averaged so it settles within about a second.
-function sampleHeadShape(P, Q, pmx, pmy, qmx, qmy, jawOpen) {
+function sampleHeadShape(P, Q, jawOpen) {
   const A = TUNE.autoFit;
   if (P.length < 8 || jawOpen > A.maxJaw) return;
+  let pmx = 0, pmy = 0, qmx = 0, qmy = 0;
+  for (let i = 0; i < P.length; i++) { pmx += P[i][0]; pmy += P[i][1]; qmx += Q[i][0]; qmy += Q[i][1]; }
+  pmx /= P.length; pmy /= P.length; qmx /= P.length; qmy /= P.length;
   eul.setFromQuaternion(head.quat, "YXZ");
   if (Math.abs(eul.y) > A.maxTurn || Math.abs(eul.x) > A.maxTurn) return;
   // the head's x and y directions as they appear on screen, in pixels so both axes use the same unit

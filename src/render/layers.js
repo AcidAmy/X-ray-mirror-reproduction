@@ -27,6 +27,7 @@ export function applyLayers() {
     u.uClipOn.value = clip.on; u.uClip.value.set(clip.x, clip.y, clip.z, clip.w);
     u.uFeather.value = S.feather * 0.75; u.uCutSoft.value = S.feather * 5;   // outline softness, and up to 5 cm of fade at a cut
     // meshes on a pivot (jaw, eyeballs) move inside the head; tell the shader where they really are, for the cuts
+    u.uJawM.value.copy(jawM);
     if (pivot) { pivot.updateMatrix(); mesh.updateMatrix(); u.uToHead.value.copy(pivotM.copy(pivot.matrix).multiply(mesh.matrix)); }
     else u.uToHead.value.identity();
   }

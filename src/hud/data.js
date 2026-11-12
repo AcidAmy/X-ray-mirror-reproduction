@@ -41,7 +41,7 @@ export function drawTrackingData(g, now, faceLms, hands, sides) {
       rows.push(["face", "tracked, " + (faceLms ? faceLms.length : 0) + " points"],
                 ["distance", (-head.pos.z).toFixed(0) + " cm (estimate)"],
                 ["turn / nod / tilt", deg(eu.y) + " / " + deg(eu.x) + " / " + deg(eu.z)],
-                ["jaw open", head.jaw.toFixed(2)],
+                ["jaw open", (head.jawAngle * 57.2958).toFixed(0) + "° (tracker score " + head.jaw.toFixed(2) + ")"],
                 ["screen fit", "scale " + head.fitS.toFixed(3) + ", shift " + head.fitX.toFixed(3) + ", " + head.fitY.toFixed(3)],
                 ["head shape", S.autofit ? "width " + head.autoW.toFixed(3) + ", height " + head.autoH.toFixed(3) + " (" + head.autoN + " samples)" : "auto fit off"]);
     } else rows.push(["face", "not found"]);

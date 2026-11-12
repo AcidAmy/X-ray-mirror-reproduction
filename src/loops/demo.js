@@ -62,10 +62,16 @@ export function startDemo() {
     const tall = !still && W < H * 0.8;
     if (tall) m.setPosition(1.5 * Math.sin(t * 0.4), 7, -64); else m.setPosition(-5 + 2 * Math.sin(t * 0.4), 1.5, -46);
     const lms = [];
-    for (const id of fitIds) { v.fromArray(META.fit[id]); v.x *= faceW; v.y *= faceH; v.applyMatrix4(m).applyMatrix4(R.baseProj); lms[id] = { x: (v.x + 1) / 2, y: (1 - v.y) / 2, z: 0 }; }
+    // the pretend mouth: it stays shut for a moment in each cycle, then opens; the chin landmark swings with it
+    const open = still ? 0.5 + 0.5 * Math.sin(t * 1.3) : Math.max(0, Math.sin(t * 1.3)), jawTurn = still ? 0 : open * 0.42;
+    const piv = META.jawPivot;
+    for (const id of fitIds) {
+      v.fromArray(META.fit[id]);
+      if (id === 152 && jawTurn) { const y = v.y - piv[1], z = v.z - piv[2]; v.y = piv[1] + y * Math.cos(jawTurn) - z * Math.sin(jawTurn); v.z = piv[2] + y * Math.sin(jawTurn) + z * Math.cos(jawTurn); }
+      v.x *= faceW; v.y *= faceH; v.applyMatrix4(m).applyMatrix4(R.baseProj); lms[id] = { x: (v.x + 1) / 2, y: (1 - v.y) / 2, z: 0 }; }
     // the eyes sweep left and right and a little up and down (they stay still in the fixed test frame)
     const gy = still ? 0 : 0.42 * Math.sin(t * 1.1), gp = still ? 0 : 0.2 * Math.sin(t * 0.7);
-    updateHead(m.elements, lms, 0.5 + 0.5 * Math.sin(t * 1.3), now, { yawL: gy, pitchL: gp, yawR: gy, pitchR: gp });
+    updateHead(m.elements, lms, open, now, { yawL: gy, pitchL: gp, yawR: gy, pitchR: gp });
     // the dataset's right hand, fingers pointing up, palm to the camera, placed at the side of the picture
     const curl = still ? 0 : 0.55 * Math.max(0, Math.sin(t * 0.9));
     const k = 0.0021 * H / W * (4 / 3) * (tall ? 0.6 : 1), hx = params.has("handx") ? Number(params.get("handx")) : tall ? 0.42 : 0.2, hy = tall && !params.has("handx") ? 0.72 : 0.56;

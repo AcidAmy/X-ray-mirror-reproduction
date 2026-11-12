@@ -4,6 +4,7 @@ import { makeMat } from "./shaders.js";
 import { $, view } from "../state.js";
 import { S } from "../settings.js";
 import { quality } from "../quality.js";
+import { addJawWeights } from "../anatomy/jaw.js";
 
 // Finger bones as pairs of MediaPipe hand landmark numbers (thumb, index, middle, ring, little finger).
 export const BONES = [[1,2],[2,3],[3,4],[5,6],[6,7],[7,8],[9,10],[10,11],[11,12],[13,14],[14,15],[15,16],[17,18],[18,19],[19,20]];
@@ -43,6 +44,8 @@ export function buildScene(META, geos) {
     R.meshes[name] = { mesh, layer, fixedMode: mode, pivot: parent || null };
     return mesh;
   };
+  // lower-face muscles and skin follow the jaw (the jaw bone itself hangs on jawPivot)
+  addJawWeights(THREE, geos.muscles, META.jawPivot); addJawWeights(THREE, geos.skin, META.jawPivot);
   add("veil", geos.skin, "veil", 0x04070d, 0x04070d, -10, null, 2).material.uniforms.uFade.value = 1;
   add("outline", geos.skin, "outline", 0x6fb6ff, 0x6fb6ff, 1, null, 0).material.uniforms.uFade.value = 1;
   add("muscles", geos.muscles, "muscles", 0xff6b5e, 0xb5453c, 2);

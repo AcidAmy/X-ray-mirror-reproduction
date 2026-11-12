@@ -5,12 +5,16 @@
 import * as THREE from "three";
 
 export const VERT = `
-uniform mat4 uToHead; uniform float uOrtho;
+uniform mat4 uToHead; uniform mat4 uJawM; uniform float uOrtho;
+attribute float aJaw;                                  // 0 = fixed to the skull, 1 = rides on the lower jaw (see anatomy/jaw.js)
 varying vec3 vN; varying vec3 vV; varying vec3 vL;
 void main() {
-  vL = (uToHead * vec4(position, 1.0)).xyz;
-  vec4 mv = modelViewMatrix * vec4(position, 1.0);
-  vN = normalize(normalMatrix * normal);
+  // blend each vertex between where it sits on the skull and where the swinging jaw would carry it
+  vec3 p = mix(position, (uJawM * vec4(position, 1.0)).xyz, aJaw);
+  vec3 nrm = normalize(mix(normal, mat3(uJawM) * normal, aJaw));
+  vL = (uToHead * vec4(p, 1.0)).xyz;
+  vec4 mv = modelViewMatrix * vec4(p, 1.0);
+  vN = normalize(normalMatrix * nrm);
   vV = uOrtho > 0.5 ? vec3(0.0, 0.0, 1.0) : normalize(-mv.xyz);
   gl_Position = projectionMatrix * mv;
 }`;
@@ -48,7 +52,8 @@ export function makeMat(xray, solid, mode) {
   return new THREE.ShaderMaterial({
     uniforms: { uColor: { value: new THREE.Color(xray) }, uSolidColor: { value: new THREE.Color(solid) },
                 uOpacity: { value: 1 }, uGain: { value: 1 }, uMode: { value: mode || 0 }, uOrtho: { value: 0 }, uFade: { value: 0 }, uFeather: { value: 0 }, uCutSoft: { value: 0 },
-                uClipOn: { value: 0 }, uClip: { value: new THREE.Vector4(1, 0, 0, 0) }, uToHead: { value: new THREE.Matrix4() } },
+                uClipOn: { value: 0 }, uClip: { value: new THREE.Vector4(1, 0, 0, 0) }, uToHead: { value: new THREE.Matrix4() },
+                uJawM: { value: new THREE.Matrix4() } },
     vertexShader: VERT, fragmentShader: FRAG, side: THREE.DoubleSide, transparent: true,
     depthTest: false, depthWrite: false, blending: mode === 2 ? THREE.NormalBlending : THREE.AdditiveBlending
   });
