@@ -186,7 +186,9 @@ export function resize() {
   // the window, in stage pixels, minus room for the top bar and the quick bar
   const vw = window.innerWidth, vh = window.innerHeight, v = view.vis;
   v.x0 = Math.max(0, -r.left); v.x1 = Math.min(view.W, vw - r.left);
-  v.y0 = Math.max(0, -r.top) + 52; v.y1 = Math.min(view.H, vh - r.top) - 76;
+  const dock = $("quick").getBoundingClientRect(), dockH = dock.height || 48;      // one row on a desktop, two on a phone
+  document.documentElement.style.setProperty("--dock-h", Math.round(dockH + 14) + "px");
+  v.y0 = Math.max(0, -r.top) + 52; v.y1 = Math.min(view.H, vh - r.top) - (dockH + 28);
   if (v.y1 - v.y0 < 80) { v.y0 = Math.max(0, -r.top); v.y1 = Math.min(view.H, vh - r.top); }
   if (R.renderer) {
     R.renderer.setPixelRatio(quality.ratio);

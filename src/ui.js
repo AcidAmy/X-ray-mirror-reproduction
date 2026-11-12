@@ -12,6 +12,13 @@ const HINT_AFTER_MS = 2500;        // nobody in view for this long -> show the h
 const RESET_AFTER_MS = 20000;      // exhibit mode: nobody for this long -> back to default settings
 
 let absentSince = 0, wasReset = true, wakeLock = null;
+// "Tap a label to learn more": shown for a few seconds each time the labels are switched on, until this visitor has
+// tapped one. On a personal device that is remembered; an exhibit forgets it with every reset, for the next visitor.
+const TIP_KEY = "xr_tip_done";
+let tipTimer = 0, tipLearned = false;
+try { tipLearned = !KIOSK && localStorage.getItem(TIP_KEY) === "1"; } catch (e) {}
+function showTip() { $("tip").hidden = false; clearTimeout(tipTimer); tipTimer = setTimeout(hideTip, 6000); }
+function hideTip() { clearTimeout(tipTimer); $("tip").hidden = true; }
 
 function refresh() {
   $("q_style").textContent = t(S.style === "solid" ? "q.xray" : "q.solid");  // the button names what a tap switches to
@@ -30,6 +37,7 @@ export function initUI() {
   if (KIOSK) document.body.classList.add("kiosk");
   $("q_style").onclick = () => { for (const b of $("style").children) if (b.dataset.style !== S.style) { b.click(); break; } };
   $("q_labels").onclick = () => $("labels").click();
+  $("labels").addEventListener("change", e => { if (e.target.checked && !tipLearned) showTip(); else hideTip(); });
   $("q_settings").onclick = () => setDrawer($("drawer").hidden);
   $("drawerclose").onclick = () => setDrawer(false);
   const canFull = !!document.documentElement.requestFullscreen;
@@ -44,8 +52,12 @@ export function initUI() {
   // tap a label on the picture to read a one-sentence explanation
   $("stage").addEventListener("click", e => {
     const r = $("stage").getBoundingClientRect(), key = S.labels ? pickLabel(e.clientX - r.left, e.clientY - r.top) : null;
-    if (key) showInfo(key); else hideInfo();
+    if (key) {
+      showInfo(key); hideTip();
+      tipLearned = true; if (!KIOSK) try { localStorage.setItem(TIP_KEY, "1"); } catch (err) {}
+    } else hideInfo();
   });
+  new ResizeObserver(() => window.dispatchEvent(new Event("resize"))).observe($("quick"));   // the dock changing height moves the label area
   // any control may change what the quick bar should show; refresh after the control's own handler has run
   for (const type of ["click", "change", "input"]) document.addEventListener(type, () => {
     wasReset = false;                                                        // someone touched a control: there is something to put back
@@ -75,7 +87,7 @@ export function setPresence(present, now) {
   if (!absentSince) absentSince = now;
   const gone = now - absentSince;
   if (gone > HINT_AFTER_MS) $("hint").hidden = false;
-  if (KIOSK && !wasReset && gone > RESET_AFTER_MS) { wasReset = true; resetAll(); setDrawer(false); }
+  if (KIOSK && !wasReset && gone > RESET_AFTER_MS) { wasReset = true; tipLearned = false; resetAll(); setDrawer(false); hideInfo(); }
 }
 export function clearPresence() { absentSince = 0; $("hint").hidden = true; }
 

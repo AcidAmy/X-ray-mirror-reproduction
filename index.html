@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#090c13">
 <title>X-Ray Mirror</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="X-Ray Mirror">
 <link rel="stylesheet" href="./src/styles.css">
 </head>
 <body>
@@ -32,6 +39,9 @@
   <!-- explanation card for a tapped label -->
   <div id="info" hidden><b id="infotitle"></b><i id="infoother"></i><p id="infotext"></p></div>
 
+  <!-- short pointer shown when the labels are switched on -->
+  <div id="tip" hidden data-i18n="info.tap">Tap a label to learn more</div>
+
   <div id="hint" hidden>
     <b data-i18n="hint.title">Step in front of the camera</b>
     <span data-i18n="hint.sub">Face the screen and hold up a hand</span>
@@ -50,7 +60,7 @@
     <button data-preset="brain" data-i18n="q.brain">Brain</button>
     <button data-preset="muscles" data-i18n="q.muscles">Muscles</button>
     <button data-preset="all" data-i18n="q.all">Everything</button>
-    <i class="sep"></i>
+    <i class="sep"></i><i class="rowbreak"></i>
     <button id="q_style" type="button">Solid</button>
     <button id="q_labels" type="button" data-i18n="q.labels">Labels</button>
     <i class="sep"></i>

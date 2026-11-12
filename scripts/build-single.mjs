@@ -19,6 +19,7 @@ if (!js || !css || assets.filter(f => f.endsWith(".js")).length !== 1) throw new
 // style and script inline; a closing script tag inside the code would end the block early, so break it up
 html = html.replace(/<link rel="stylesheet"[^>]*>/, () => "<style>\n" + read("assets/" + css, "utf8") + "</style>");
 html = html.replace(/<script type="module"[^>]*src="[^"]*"><\/script>/, "");
+html = html.replace(/\s*<link rel="(manifest|icon|apple-touch-icon)"[^>]*>/g, "");     // a lone file has no manifest or icon files beside it
 const code = read("assets/" + js, "utf8").replace(/<\/script/gi, "<\\/script");
 
 const blocks = [

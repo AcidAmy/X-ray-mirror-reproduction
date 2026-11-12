@@ -36,7 +36,8 @@ window.addEventListener("resize", () => {
   if (mode === "demo") fitDemoToWindow();
   resize();                                                // the stage can keep its size while the window crops it differently
 });
-const setRunning = on => { document.body.classList.toggle("running", on); keepAwake(on); };
+// (the quick bar only exists while running, and the label area depends on its height: measure again)
+const setRunning = on => { document.body.classList.toggle("running", on); keepAwake(on); resize(); };
 let retryTimer = 0;
 
 // Load and build the 3D anatomy once; later calls reuse it.
