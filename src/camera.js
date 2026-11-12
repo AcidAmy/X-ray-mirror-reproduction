@@ -1,12 +1,14 @@
 // Camera capture. The video only ever goes to the <video> element and the in-browser trackers; nothing is uploaded.
+import { t } from "./i18n.js";
+
 let stream = null;
 
 // onLost runs if the camera goes away later (unplugged, permission withdrawn).
 export async function startCamera(video, onLost) {
   if (!window.isSecureContext)
-    throw new Error("the camera only works on https:// pages or on localhost.");
+    throw new Error(t("e.insecure"));
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
-    throw new Error("this browser will not give this page a camera. Try Chrome or Edge.");
+    throw new Error(t("e.unsupported"));
   stopCamera(video);
   stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
@@ -25,16 +27,14 @@ export function stopCamera(video) {
 
 export function cameraActive() { return !!stream; }
 
-// Turn a start-up failure into a sentence a person can act on. stageName says which step failed.
+// Turn a start-up failure into a status line a person can act on: returns [translation key, variables].
+// stageName says which step failed: "camera", "engine" or "trackers".
 export function describeStartError(err, stageName) {
   const name = err && err.name, msg = err && err.message ? err.message : String(err);
   if (stageName === "camera") {
-    if (name === "NotAllowedError" || name === "SecurityError")
-      return "Camera blocked. Allow camera access for this page and click Start again.";
-    if (name === "NotFoundError" || name === "OverconstrainedError")
-      return "No camera found. Connect one and click Start again, or try the demo.";
-    if (name === "NotReadableError" || name === "AbortError")
-      return "The camera is busy or could not start. Close other apps that use it and click Start again.";
+    if (name === "NotAllowedError" || name === "SecurityError") return ["e.blocked"];
+    if (name === "NotFoundError" || name === "OverconstrainedError") return ["e.nocam"];
+    if (name === "NotReadableError" || name === "AbortError") return ["e.busy"];
   }
-  return "Could not load the " + stageName + ": " + msg;
+  return ["e.load", { stage: t("stage." + stageName), msg }];
 }

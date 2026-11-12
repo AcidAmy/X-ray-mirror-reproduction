@@ -12,12 +12,15 @@ import { startLive } from "./loops/live.js";
 import { startDemo } from "./loops/demo.js";
 import { initQuality } from "./quality.js";
 import { initUI, keepAwake, KIOSK } from "./ui.js";
+import { applyLanguage } from "./i18n.js";
+import { setProgress } from "./net.js";
 
 const video = $("video"), stage = $("stage");
 let stopLoop = null;            // stops whichever loop (live or demo) is running
 let mode = "intro";             // "intro" | "starting" | "live" | "demo"
 
 initQuality();
+applyLanguage();
 initSettings(applyStyle);
 initUI();
 initPointer();
@@ -40,7 +43,8 @@ let retryTimer = 0;
 let booted = null;
 function boot() {
   return booted || (booted = (async () => {
-    const { META, geos } = await loadAnatomy(import.meta.env.BASE_URL);
+    // the loading bar: the first 15% is the anatomy, the rest the tracker models
+    const { META, geos } = await loadAnatomy(import.meta.env.BASE_URL, f => setProgress(f * 0.15));
     initHead(META);
     buildScene(META, geos);
   })().catch(e => { booted = null; throw e; }));
@@ -67,26 +71,29 @@ async function runCamera() {
   $("start").disabled = true; $("tocamera").hidden = true;
   let stageName = "camera";
   try {
-    setStatus("Asking for the camera…");
+    setStatus("s.asking");
     const size = await startCamera(video, () => {
-      backToIntro(); setStatus("The camera stopped. Click Start camera to try again.", "bad");
+      backToIntro(); setStatus("s.camstopped", "bad");
       if (KIOSK) retryTimer = setTimeout(runCamera, 5000);
     });
     if (size.width && size.height) stage.style.setProperty("--ar", (size.width / size.height).toFixed(4));
     $("intro").hidden = true;
-    stageName = "3D engine";
-    setStatus("Loading the 3D anatomy…");
+    stageName = "engine";
+    setStatus("s.anatomy");
     await boot();
     stageName = "trackers";
-    setStatus("Loading the face and hand trackers (first time takes a few seconds)…");
-    await loadTrackers();
+    setStatus("s.trackers");
+    await loadTrackers(f => setProgress(0.15 + f * 0.85));
+    setProgress(null);
     $("L_hands").disabled = !trackers.hand;
     resize();
     stopLoop = startLive();
     mode = "live"; setRunning(true);
   } catch (err) {
+    setProgress(null);
     backToIntro();                                           // also releases the camera if it was already on
-    setStatus(describeStartError(err, stageName), "bad");
+    const [key, vars] = describeStartError(err, stageName);
+    setStatus(key, "bad", vars);
     if (KIOSK) retryTimer = setTimeout(runCamera, 5000);     // an unattended exhibit keeps trying by itself
   }
 }
@@ -98,8 +105,9 @@ async function runDemo() {
   stage.style.removeProperty("--ar");
   mode = "starting";
   try {
-    setStatus("Loading the 3D anatomy…");
+    setStatus("s.anatomy");
     await boot();
+    setProgress(null);
     fitDemoToWindow();
     resize();
     $("L_hands").disabled = false;
@@ -108,7 +116,7 @@ async function runDemo() {
     mode = "demo"; setRunning(true);
   } catch (e) {
     backToIntro();
-    setStatus("Demo failed: " + e.message, "bad");
+    setStatus("s.demofail", "bad", { msg: e.message });
   }
 }
 
@@ -120,6 +128,10 @@ window.addEventListener("pagehide", () => stopCamera(video));
 
 if (location.hash === "#demo") runDemo();
 else if (KIOSK) runCamera();                               // exhibit mode starts by itself (the camera must already be allowed)
+
+// Offline cache: after the first visit the page, models and runtime load from this device (see public/sw.js).
+if (import.meta.env.PROD && "serviceWorker" in navigator)
+  window.addEventListener("load", () => navigator.serviceWorker.register(import.meta.env.BASE_URL + "sw.js").catch(() => {}));
 
 // Read-only handle for checking the scene from the browser console.
 if (import.meta.env.DEV) window.__xr = { R, trackers };

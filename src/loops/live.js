@@ -16,7 +16,7 @@ export function startLive() {
   let lastTime = -1, lostAt = 0, said = "", running = true, lastStamp = 0, handGap = 0;
   const track = video.srcObject && video.srcObject.getVideoTracks()[0];
   setTarget(Math.min(30, (track && track.getSettings().frameRate) || 30));
-  const say = (t, c) => { if (said !== t) { said = t; setStatus(t, c); } };
+  const say = (keys, cls, vars) => { const id = String(keys); if (said !== id) { said = id; setStatus(keys, cls, vars); } };
   function tick() {
     if (!running) return;
     requestAnimationFrame(tick);
@@ -48,10 +48,9 @@ export function startLive() {
         // The tracker names hands as if the picture were mirrored; ours is not, so the names are swapped.
         sides = hands.map((h, i) => !!(hd[i] && hd[i][0] && hd[i][0].categoryName === "Left"));
       }
-    } catch (e) { say("The tracker hit an error: " + e.message, "bad"); return; }
-    say(head.found ? "Tracking your head." + (hands.length ? " Hand bones on." : "")
-                   : hands.length ? "Hand found. Face the camera to see inside your head."
-                   : "No face found. Face the camera, with light on your face.", head.found || hands.length ? "ok" : "bad");
+    } catch (e) { say("s.trackerr", "bad", { msg: e.message }); return; }
+    say(head.found ? (hands.length ? ["s.tracking", "s.handson"] : "s.tracking") : hands.length ? "s.handonly" : "s.noface",
+        head.found || hands.length ? "ok" : "bad");
     renderFrame(now, faceLms, hands, sides, handsWorld);
     setPresence(head.found || hands.length > 0, now);
     addFrameCost(performance.now() - now);

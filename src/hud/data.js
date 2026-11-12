@@ -4,6 +4,7 @@ import { S, LAYERS } from "../settings.js";
 import { $, view } from "../state.js";
 import { head } from "../tracking/head.js";
 import { quality, evaluate } from "../quality.js";
+import { t } from "../i18n.js";
 import { resize } from "../render/scene.js";
 
 let frames = 0, fps = 0, fpsAt = 0, dataAt = 0;
@@ -17,7 +18,7 @@ export function countFrame(now) {
     fps = Math.round(frames * 1000 / (now - fpsAt)); frames = 0; fpsAt = now;
     $("fps").textContent = fps + " fps";
     if (evaluate(fps)) resize();                             // hold the frame rate by adjusting the render resolution
-    $("autofitv").textContent = S.autofit && head.autoN ? "width " + Math.round(head.autoW * 100) + "%, height " + Math.round(head.autoH * 100) + "%" : "";
+    $("autofitv").textContent = S.autofit && head.autoN ? t("fit.readout", { w: Math.round(head.autoW * 100), h: Math.round(head.autoH * 100) }) : "";
   }
 }
 export function resetFps() { frames = 0; fps = 0; fpsAt = performance.now(); $("fps").textContent = ""; $("autofitv").textContent = ""; }

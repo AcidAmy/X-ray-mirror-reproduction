@@ -1,0 +1,21 @@
+# Response headers for Netlify and Cloudflare Pages (both read this file from the published folder).
+# Hashed scripts and styles never change, so browsers may keep them for a year.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+# Models, runtime and anatomy keep their names between releases: let browsers check for a new copy.
+/models/*
+  Cache-Control: public, max-age=86400
+/wasm/*
+  Cache-Control: public, max-age=86400
+/anatomy/*
+  Cache-Control: public, max-age=86400
+# The offline cache script and the page itself must always be fresh.
+/sw.js
+  Cache-Control: no-cache
+/
+  Cache-Control: no-cache
+# The camera is used by this page only; no microphone or location.
+/*
+  Permissions-Policy: camera=(self), microphone=(), geolocation=()
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer

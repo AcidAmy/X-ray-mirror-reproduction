@@ -7,12 +7,26 @@ import { head } from "../tracking/head.js";
 import { clipState } from "../reveal.js";
 import { jawM } from "../render/layers.js";
 import { jawWeight } from "../anatomy/jaw.js";
+import { labelText } from "../anatomy/terms.js";
+import { lang } from "../i18n.js";
 
 const LABEL_COLOR = { skull: "#d9f0ff", brain: "#ffc2d6", muscles: "#ffb3aa", eyes: "#fff3a8", hands: "#d9f0ff" };
 const HEAD_C = [0, 3.2, -4.8];                    // rough centre of the head, in head coordinates (cm)
 const labelState = {};                            // text -> { side, y } so labels glide instead of jumping
 const lp = new THREE.Vector3(), ln = new THREE.Vector3(), lc = new THREE.Vector3(), lj = new THREE.Vector3();
 let frameNo = 0, headSplit = 0;
+// where each label's text was drawn this frame, so a tap can be matched to a label
+let boxes = [];
+export function pickLabel(x, y) {
+  let best = null, bestD = 1e9;
+  for (const b of boxes) {
+    const dx = Math.max(b.x0 - x, 0, x - b.x1), dy = Math.max(b.y0 - y, 0, y - b.y1), d = Math.hypot(dx, dy);
+    const da = Math.hypot(b.ax - x, b.ay - y);            // tapping the anchor dot counts too
+    const dist = Math.min(d, da - 6);
+    if (dist < 14 && dist < bestD) { bestD = dist; best = b.key; }
+  }
+  return best;
+}
 
 function toScreen(v) {                            // head/view-space point -> heads-up layer pixels (mirrored like the picture)
   lc.copy(v).applyMatrix4(R.cam.projectionMatrix);
@@ -55,7 +69,8 @@ function layoutLabels(g, items, cx, halfWidth, key, splitX) {
     else if (st.side === "right" && it.ax < splitX - halfWidth * 0.15) st.side = "left";
     it.st = st; cols[st.side].push(it);
   }
-  g.font = "600 12.5px system-ui,-apple-system,Segoe UI,Roboto,sans-serif"; g.textBaseline = "middle"; g.lineJoin = "round";
+  g.font = "600 13px system-ui,-apple-system,Segoe UI,Roboto,PingFang SC,Microsoft YaHei,sans-serif"; g.textBaseline = "middle"; g.lineJoin = "round";
+  for (const it of items) it.label = labelText(it.text, lang, S.bilingual);         // it.text stays the English key
   for (const side of ["left", "right"]) {
     const list = cols[side], gap = 18;
     if (!list.length) continue;
@@ -81,7 +96,7 @@ function layoutLabels(g, items, cx, halfWidth, key, splitX) {
     let tx = side === "left" ? Math.max(x0 + 8, cx - halfWidth - 22) : Math.min(x1 - 8, cx + halfWidth + 22);
     // Fix over the original: the text grows away from the subject, so near a picture edge it ran off the stage.
     // Pull the column inwards just far enough for its widest label to fit.
-    let widest = 0; for (const it of list) widest = Math.max(widest, g.measureText(it.text).width);
+    let widest = 0; for (const it of list) { it.w = g.measureText(it.label).width; widest = Math.max(widest, it.w); }
     if (side === "left") tx = Math.max(tx, Math.min(x0 + widest + 8, x1 - 8));
     else tx = Math.min(tx, Math.max(x1 - 8 - widest, x0 + 8));
     for (const it of list) {
@@ -90,15 +105,16 @@ function layoutLabels(g, items, cx, halfWidth, key, splitX) {
       g.beginPath(); g.moveTo(it.ax, it.ay); g.lineTo(tx + (side === "left" ? 5 : -5), y); g.stroke();
       g.globalAlpha = 1; g.fillStyle = it.color; g.beginPath(); g.arc(it.ax, it.ay, 2.6, 0, 6.3); g.fill();
       g.textAlign = side === "left" ? "right" : "left";
-      g.strokeStyle = "rgba(4,7,13,.9)"; g.lineWidth = 3.5; g.strokeText(it.text, tx, y);
-      g.fillText(it.text, tx, y);
+      g.strokeStyle = "rgba(4,7,13,.9)"; g.lineWidth = 3.5; g.strokeText(it.label, tx, y);
+      g.fillText(it.label, tx, y);
+      boxes.push({ key: it.text, ax: it.ax, ay: it.ay, x0: side === "left" ? tx - it.w : tx, x1: side === "left" ? tx : tx + it.w, y0: y - 9, y1: y + 9 });
     }
   }
 }
 
 export function drawLabels(g, lens) {
   const { W, H } = view;
-  frameNo++;
+  frameNo++; boxes = [];
   let hx = W / 2, halfW = W * 0.16;
   if (head.found && R.headGroup.visible) {
     lp.fromArray(HEAD_C).applyMatrix4(R.headGroup.matrix);

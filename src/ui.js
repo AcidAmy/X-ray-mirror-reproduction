@@ -3,6 +3,9 @@
 // from visitors, and put everything back to defaults once nobody has been there for a while.
 import { $ } from "./state.js";
 import { S, resetAll } from "./settings.js";
+import { t, lang, setLanguage, onLanguage } from "./i18n.js";
+import { pickLabel } from "./hud/labels.js";
+import { labelInfo } from "./anatomy/terms.js";
 
 export const KIOSK = new URLSearchParams(location.search).has("kiosk");
 const HINT_AFTER_MS = 2500;        // nobody in view for this long -> show the hint
@@ -11,14 +14,14 @@ const RESET_AFTER_MS = 20000;      // exhibit mode: nobody for this long -> back
 let absentSince = 0, wasReset = true, wakeLock = null;
 
 function refresh() {
-  $("q_style").textContent = S.style === "solid" ? "X-ray" : "Solid";       // the button names what a tap switches to
+  $("q_style").textContent = t(S.style === "solid" ? "q.xray" : "q.solid");  // the button names what a tap switches to
   $("q_labels").classList.toggle("on", S.labels);
   const preset = S.skull && S.brain && S.muscles ? "all" : S.skull && !S.brain && !S.muscles ? "skull"
                : S.brain && !S.skull && !S.muscles ? "brain" : S.muscles && !S.skull && !S.brain ? "muscles" : "";
   for (const b of $("quick").querySelectorAll("[data-preset]")) b.classList.toggle("on", b.dataset.preset === preset);
   $("q_settings").classList.toggle("on", !$("drawer").hidden);
   $("q_settings").setAttribute("aria-expanded", String(!$("drawer").hidden));
-  $("q_full").textContent = document.fullscreenElement ? "Exit full screen" : "Full screen";
+  $("q_full").textContent = t(document.fullscreenElement ? "q.exitfull" : "q.full");
 }
 
 export function setDrawer(open) { $("drawer").hidden = !open; refresh(); }
@@ -36,6 +39,13 @@ export function initUI() {
     else document.documentElement.requestFullscreen().catch(() => {});
   };
   document.addEventListener("fullscreenchange", refresh);
+  $("q_lang").onclick = () => setLanguage(lang === "zh" ? "en" : "zh");
+  onLanguage(() => { refresh(); hideInfo(); });
+  // tap a label on the picture to read a one-sentence explanation
+  $("stage").addEventListener("click", e => {
+    const r = $("stage").getBoundingClientRect(), key = S.labels ? pickLabel(e.clientX - r.left, e.clientY - r.top) : null;
+    if (key) showInfo(key); else hideInfo();
+  });
   // any control may change what the quick bar should show; refresh after the control's own handler has run
   for (const type of ["click", "change", "input"]) document.addEventListener(type, () => {
     wasReset = false;                                                        // someone touched a control: there is something to put back
@@ -48,6 +58,16 @@ export function initUI() {
   });
   refresh();
 }
+
+let infoTimer = 0;
+function showInfo(key) {
+  const info = labelInfo(key, lang);
+  if (!info) return;
+  $("infotitle").textContent = info.title; $("infoother").textContent = info.other; $("infotext").textContent = info.text;
+  $("info").hidden = false;
+  clearTimeout(infoTimer); infoTimer = setTimeout(hideInfo, 9000);
+}
+function hideInfo() { clearTimeout(infoTimer); $("info").hidden = true; }
 
 // Called on every live frame: is anybody (a face or a hand) in view?
 export function setPresence(present, now) {

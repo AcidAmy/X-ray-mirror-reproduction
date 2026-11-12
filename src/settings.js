@@ -1,9 +1,10 @@
 // User settings: defaults, localStorage persistence and the control panel bindings.
 import { $ } from "./state.js";
+import { t, onLanguage } from "./i18n.js";
 
 export const DEFAULTS = { skull: true, brain: false, muscles: false, eyes: true, outline: true, hands: true,
                           style: "xray", bright: 1, real: 0.12, feather: 0.2, reveal: "whole", cut: 0.5, showdata: false,
-                          fs: 1, fw: 1, fh: 1, fd: 1, fx: 0, fy: 0, fz: 0, labels: false, autofit: true };
+                          fs: 1, fw: 1, fh: 1, fd: 1, fx: 0, fy: 0, fz: 0, labels: false, autofit: true, bilingual: false };
 export const LAYERS = ["skull", "brain", "muscles", "eyes", "outline", "hands"];
 export const SLIDERS = ["bright", "real", "feather", "cut", "fs", "fw", "fh", "fd", "fx", "fy", "fz"];
 const STYLES = ["xray", "solid"], REVEALS = ["whole", "left", "right", "top", "bottom", "lens"];
@@ -33,10 +34,10 @@ export function syncUI() {
   for (const k of ["fs", "fw", "fh", "fd"]) $(k + "v").textContent = Math.round(S[k] * 100) + "%";
   for (const k of ["fx", "fy", "fz"]) $(k + "v").textContent = (S[k] > 0 ? "+" : "") + S[k].toFixed(1) + " cm";
   $("featherv").textContent = Math.round(S.feather * 100) + "%";
-  $("labels").checked = S.labels; $("autofit").checked = S.autofit;
+  $("labels").checked = S.labels; $("autofit").checked = S.autofit; $("bilingual").checked = S.bilingual;
   $("reveal").value = S.reveal; $("showdata").checked = S.showdata; $("data").hidden = !S.showdata;
   $("cutrow").hidden = S.reveal === "whole";
-  $("cutlabel").textContent = S.reveal === "lens" ? "Lens size" : "Cut position";
+  $("cutlabel").textContent = t(S.reveal === "lens" ? "l.lens" : "l.cut");
 }
 
 // Back to the defaults (exhibit mode does this when a visitor has left).
@@ -52,6 +53,8 @@ export function initSettings(onStyle) {
   for (const k of SLIDERS) $(k).oninput = e => { S[k] = parseFloat(e.target.value); save(); syncUI(); };
   $("labels").onchange = e => { S.labels = e.target.checked; save(); };
   $("autofit").onchange = e => { S.autofit = e.target.checked; save(); };
+  $("bilingual").onchange = e => { S.bilingual = e.target.checked; save(); };
+  onLanguage(syncUI);
   $("reveal").onchange = e => { S.reveal = e.target.value; S.cut = 0.5; save(); syncUI(); };
   $("showdata").onchange = e => { S.showdata = e.target.checked; save(); syncUI(); };
   $("fitreset").onclick = () => { S.fs = S.fw = S.fh = S.fd = 1; S.fx = S.fy = S.fz = 0; save(); syncUI(); };

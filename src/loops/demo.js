@@ -45,7 +45,7 @@ function curlHand(base, angle) {
 // Returns a function that stops the loop.
 export function startDemo() {
   $("intro").hidden = true;
-  setStatus("Demo scene (no camera).", "ok");
+  setStatus("s.demo", "ok");
   const params = new URLSearchParams(location.search), still = params.has("still");
   const META = R.META, base = META.demoHand, cx = base[9][0], cy = base[9][1], cz = base[9][2];
   let running = true, dumped = false;

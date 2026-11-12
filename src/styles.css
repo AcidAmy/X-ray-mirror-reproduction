@@ -2,7 +2,7 @@
         --accent:#7fd1ff; --ok:#57d98a; --bad:#ff5d73; }
 * { box-sizing:border-box; }
 html,body { margin:0; height:100%; overflow:hidden; background:var(--bg); color:var(--fg);
-            font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+            font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif; }
 .viewport { position:fixed; inset:0; overflow:hidden; background:radial-gradient(ellipse at 50% 40%, #131a2b, #05070c 75%); }
 /* the camera's shape, scaled to cover the window and centred */
 .stage { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); aspect-ratio:var(--ar, 1.3333);
@@ -97,3 +97,14 @@ body:not(.running) .quick { display:none; }
 }
 /* exhibit (kiosk) mode: visitors get the quick controls only */
 body.kiosk #q_settings, body.kiosk #tocamera { display:none; }
+
+/* ---------- language, explanations, loading ---------- */
+#intro .privacy { font-size:13px; color:var(--dim); }
+.loadbar { position:absolute; left:0; right:0; top:0; z-index:6; height:4px; background:rgba(255,255,255,.1); overflow:hidden; }
+.loadbar i { display:block; height:100%; width:0; background:var(--accent); transition:width .15s linear; }
+#info { position:absolute; left:50%; bottom:calc(86px + env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:4;
+        width:min(440px, calc(100vw - 24px)); padding:14px 16px; border-radius:16px; pointer-events:none;
+        background:rgba(11,15,24,.9); border:1px solid var(--accent); backdrop-filter:blur(10px); }
+#info b { font-size:18px; }
+#info i { font-style:normal; color:var(--dim); margin-left:10px; font-size:13px; }
+#info p { margin:6px 0 0; font-size:15px; line-height:1.55; }
