@@ -30,6 +30,8 @@ export const TUNE = {
   jawFit: {
     maxAngle: 0.55,       // widest the jaw bone may swing (radians, about 31 degrees)
     closedBelow: 0.06,    // tracker "jawOpen" score under this = mouth shut; used to learn this person's resting chin
+    openAbove: 0.2,       // score above this = mouth certainly open; between the two the chin's say fades in
+    maxPerScore: 1.4,     // the chin may claim at most this many radians per unit of score
     fallbackAngle: 0.36   // radians at a "jawOpen" score of 1, used until the resting chin is known
   },
 

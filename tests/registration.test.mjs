@@ -68,3 +68,37 @@ test("a new person is measured afresh", () => {
   for (let i = 0; i < 90; i++) updateHead(pose.elements, landmarks(pose, 0.95, 1.05, 0), 0, now += 33, null);
   assert.ok(Math.abs(head.fitS * head.autoW - 0.95) < 0.02 && Math.abs(head.fitS * head.autoH - 1.05) < 0.02);
 });
+
+test("nodding with the mouth shut does not open the jaw", () => {
+  resetHead();
+  let now = 500000;
+  const at = pitch => new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(pitch, 0, 0, "YXZ")).setPosition(0, 0, -50);
+  for (let i = 0; i < 60; i++) { const p = at(0); updateHead(p.elements, landmarks(p, 1, 1, 0), 0.01, now += 33, null); }
+  // The head nods down. The tracker's pose lags the landmarks by 6 degrees (as it does on real faces), which shifts
+  // the chin exactly as an opening jaw would, and its "jawOpen" score wobbles a little but stays low.
+  let worst = 0;
+  for (let i = 0; i < 90; i++) {
+    const pitch = Math.min(0.45, i * 0.02), reported = at(pitch), actual = at(pitch + 0.1);
+    updateHead(reported.elements, landmarks(actual, 1, 1, 0), 0.03 + 0.04 * (i % 2), now += 33, null);
+    worst = Math.max(worst, head.jawAngle);
+  }
+  assert.ok(worst < 0.02, "jaw opened by " + worst.toFixed(3) + " rad while nodding");
+  // ...and a real opening while nodded is still followed
+  for (let i = 0; i < 45; i++) { const reported = at(0.45), actual = at(0.55); updateHead(reported.elements, landmarks(actual, 1, 1, 0.3), 0.7, now += 33, null); }
+  // (with the pose off by 6 degrees the opening cannot be exact; it must stay within 0.1 rad and never collapse)
+  assert.ok(Math.abs(head.jawAngle - 0.3) < 0.1, "jaw angle while nodded: " + head.jawAngle.toFixed(3));
+});
+
+test("the jaw angle is exact at any nod when the pose is right", () => {
+  const at = pitch => new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(pitch, 0.1, 0, "YXZ")).setPosition(2, 1, -55);
+  let now = 900000;
+  for (const pitch of [-0.3, 0, 0.45]) {
+    resetHead();
+    const p = at(pitch);
+    for (let i = 0; i < 60; i++) updateHead(p.elements, landmarks(p, 1, 1, 0), 0.01, now += 33, null);
+    for (const jaw of [0.1, 0.25, 0.4]) {
+      for (let i = 0; i < 40; i++) updateHead(p.elements, landmarks(p, 1, 1, jaw), 0.8, now += 33, null);
+      assert.ok(Math.abs(head.jawAngle - jaw) < 0.012, "pitch " + pitch + ", jaw " + jaw + " -> " + head.jawAngle.toFixed(3));
+    }
+  }
+});

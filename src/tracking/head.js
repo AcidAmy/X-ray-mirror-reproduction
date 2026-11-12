@@ -11,7 +11,7 @@ export const head = { found: false, pos: new THREE.Vector3(), quat: new THREE.Qu
                       fitS: 1, fitX: 0, fitY: 0, lms: null,
                       jaw: 0,          // the tracker's "jawOpen" score, 0..1
                       jawAngle: 0,     // how far the jaw bone is swung open, radians
-                      jawRest: null,   // this person's chin position with the mouth shut, as a jaw angle (null = not known yet)
+                      jawRest: null,   // how far this person's resting chin is from the model's, in jaw lengths, at the current nod (null = not known yet)
                       // where each eye looks, radians: yaw > 0 towards the person's left, pitch > 0 downwards
                       gaze: { yawL: 0, pitchL: 0, yawR: 0, pitchR: 0 },
                       // automatic head-shape fit: how much wider / taller / deeper this person's head is than the model
@@ -30,10 +30,20 @@ export const fitIds = [];
 // or an opening mouth would stretch and shift the whole skull; the chin drives the jaw instead.
 const JAW_POINTS = new Set([152, 61, 291]), CHIN = 152;
 const chin0 = new THREE.Vector3(), chin1 = new THREE.Vector3();
+// Resting chin position per head pitch. When the head nods, the tracked pose and the chin landmark drift apart a
+// little (the chin is foreshortened), which on its own looks exactly like the jaw opening. So the rest position is
+// learned separately for each few degrees of nod, whenever the tracker says the mouth is shut.
+const restByPitch = new Map(), PITCH_STEP = 0.09;
+function restFor(bin) {                                   // this bin, else the nearest one already learned
+  if (restByPitch.has(bin)) return restByPitch.get(bin);
+  let best = null, bestD = 1e9;
+  for (const [b, v] of restByPitch) { const d = Math.abs(b - bin); if (d < bestD) { bestD = d; best = v; } }
+  return best;
+}
 export function initHead(META) { fitIds.length = 0; for (const k of Object.keys(META.fit)) fitIds.push(Number(k)); }
 
 export function resetHead() { head.found = false; head.lms = null; head.jaw = 0; lastSeenT = -1e9; resetAutoFit(); }
-function resetAutoFit() { head.autoW = head.autoH = head.autoD = 1; head.autoN = 0; head.jawRest = null; }
+function resetAutoFit() { head.autoW = head.autoH = head.autoD = 1; head.autoN = 0; head.jawRest = null; restByPitch.clear(); }
 
 // Turns the tracker's eye "blendshape" scores (each 0..1) into eye angles.
 // Names follow the person: eyeLookOutLeft = their left eye looking further to their left.
@@ -111,7 +121,7 @@ export function updateHead(matrixData, lms, jawOpen, now, gaze) {
   // Jaw. Swing the model's chin about the jaw joint until it lands on the tracked chin: project the chin for a shut
   // jaw and for a jaw opened by a test angle, and see how far along that path the tracked chin lies. Chins differ
   // between people, so the angle measured while the mouth is shut is remembered as this person's rest and taken off.
-  const J = TUNE.jawFit, TEST = 0.3, chin = lms[CHIN];
+  const J = TUNE.jawFit, chin = lms[CHIN];
   let angle = Math.min(1, Math.max(0, jawOpen)) * J.fallbackAngle;
   if (chin && META.fit[CHIN]) {
     const piv = META.jawPivot, c = META.fit[CHIN];
@@ -120,13 +130,34 @@ export function updateHead(matrixData, lms, jawOpen, now, gaze) {
       out.set(c[0], piv[1] + y * cs - z * sn, piv[2] + y * sn + z * cs).applyMatrix4(headGroup.matrix).applyMatrix4(cam.projectionMatrix);
       out.x *= view.W / 2; out.y *= view.H / 2;            // to pixels, so both screen axes count equally
     };
-    project(0, chin0); project(TEST, chin1);
-    const dx = chin1.x - chin0.x, dy = chin1.y - chin0.y, d2 = dx * dx + dy * dy;
-    if (d2 > 1e-6) {
-      const qx = (chin.x * 2 - 1) * view.W / 2, qy = (1 - chin.y * 2) * view.H / 2;
-      const raw = TEST * ((qx - chin0.x) * dx + (qy - chin0.y) * dy) / d2;
-      if (jawOpen < J.closedBelow) head.jawRest = head.jawRest === null ? raw : head.jawRest + (raw - head.jawRest) * 0.08;
-      if (head.jawRest !== null) angle = raw - head.jawRest;
+    // This person's resting chin: where their chin sits relative to the model's with the mouth shut, as a screen
+    // offset measured in "jaw lengths" (so it holds at any distance from the camera). It is learned per few degrees
+    // of nod, whenever the tracker's own "jawOpen" score says the mouth is shut.
+    const qx = (chin.x * 2 - 1) * view.W / 2, qy = (1 - chin.y * 2) * view.H / 2;
+    chin1.fromArray(piv).applyMatrix4(headGroup.matrix).applyMatrix4(cam.projectionMatrix);
+    project(0, chin0);
+    const unit = Math.hypot(chin0.x - chin1.x * view.W / 2, chin0.y - chin1.y * view.H / 2) || 1;
+    eul.setFromQuaternion(head.quat, "YXZ");
+    const bin = Math.round(eul.x / PITCH_STEP);
+    if (jawOpen < J.closedBelow) {
+      const ox = (qx - chin0.x) / unit, oy = (qy - chin0.y) / unit, known = restByPitch.get(bin);
+      if (known) { known.x += (ox - known.x) * 0.25; known.y += (oy - known.y) * 0.25; } else restByPitch.set(bin, { x: ox, y: oy });
+    }
+    const rest = restFor(bin);
+    head.jawRest = rest ? Math.hypot(rest.x, rest.y) : null;
+    if (rest) {
+      // The chin travels along a curved path on screen (it swings towards the camera as well as down), so a
+      // straight-line estimate is badly off. Search the swing angle directly: coarse steps, then fine steps around the best.
+      const tx = qx - rest.x * unit, ty = qy - rest.y * unit;
+      const miss = theta => { project(theta, chin0); return (chin0.x - tx) ** 2 + (chin0.y - ty) ** 2; };
+      let raw = 0, least = Infinity;
+      for (let th = 0; th <= J.maxAngle + 0.0001; th += 0.05) { const m = miss(th); if (m < least) { least = m; raw = th; } }
+      for (let th = Math.max(0, raw - 0.045), end = raw + 0.0451; th <= end; th += 0.005) { const m = miss(th); if (m < least) { least = m; raw = th; } }
+      // The chin gives the size of the opening; the tracker's own "jawOpen" score decides whether the mouth is open
+      // at all. With the score near zero the jaw stays shut whatever the chin appears to do, and the angle may
+      // never run far ahead of what the score supports.
+      const t = Math.min(1, Math.max(0, (jawOpen - J.closedBelow) / (J.openAbove - J.closedBelow)));
+      angle = Math.min(raw, jawOpen * J.maxPerScore) * t * t * (3 - 2 * t);
     }
   }
   angle = Math.min(J.maxAngle, Math.max(0, angle));
