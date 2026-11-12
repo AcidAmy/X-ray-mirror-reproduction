@@ -3,7 +3,7 @@ import { $ } from "./state.js";
 
 export const DEFAULTS = { skull: true, brain: false, muscles: false, eyes: true, outline: true, hands: true,
                           style: "xray", bright: 1, real: 0.12, feather: 0.2, reveal: "whole", cut: 0.5, showdata: false,
-                          fs: 1, fw: 1, fh: 1, fd: 1, fx: 0, fy: 0, fz: 0, labels: false };
+                          fs: 1, fw: 1, fh: 1, fd: 1, fx: 0, fy: 0, fz: 0, labels: false, autofit: true };
 export const LAYERS = ["skull", "brain", "muscles", "eyes", "outline", "hands"];
 export const SLIDERS = ["bright", "real", "feather", "cut", "fs", "fw", "fh", "fd", "fx", "fy", "fz"];
 const STYLES = ["xray", "solid"], REVEALS = ["whole", "left", "right", "top", "bottom", "lens"];
@@ -33,7 +33,7 @@ export function syncUI() {
   for (const k of ["fs", "fw", "fh", "fd"]) $(k + "v").textContent = Math.round(S[k] * 100) + "%";
   for (const k of ["fx", "fy", "fz"]) $(k + "v").textContent = (S[k] > 0 ? "+" : "") + S[k].toFixed(1) + " cm";
   $("featherv").textContent = Math.round(S.feather * 100) + "%";
-  $("labels").checked = S.labels;
+  $("labels").checked = S.labels; $("autofit").checked = S.autofit;
   $("reveal").value = S.reveal; $("showdata").checked = S.showdata; $("data").hidden = !S.showdata;
   $("cutrow").hidden = S.reveal === "whole";
   $("cutlabel").textContent = S.reveal === "lens" ? "Lens size" : "Cut position";
@@ -46,6 +46,7 @@ export function initSettings(onStyle) {
   for (const b of $("style").children) b.onclick = () => { S.style = b.dataset.style; save(); syncUI(); onStyle(); };
   for (const k of SLIDERS) $(k).oninput = e => { S[k] = parseFloat(e.target.value); save(); syncUI(); };
   $("labels").onchange = e => { S.labels = e.target.checked; save(); };
+  $("autofit").onchange = e => { S.autofit = e.target.checked; save(); };
   $("reveal").onchange = e => { S.reveal = e.target.value; S.cut = 0.5; save(); syncUI(); };
   $("showdata").onchange = e => { S.showdata = e.target.checked; save(); syncUI(); };
   $("fitreset").onclick = () => { S.fs = S.fw = S.fh = S.fd = 1; S.fx = S.fy = S.fz = 0; save(); syncUI(); };

@@ -26,7 +26,7 @@ export function renderFrame(now, faceLms, hands, sides) {
   handRigs.forEach((rig, i) => {
     const lms = hands[i];
     if (lms && S.hands) {
-      updateHand(rig, lms, sides[i]);
+      updateHand(rig, lms, sides[i], now);
       drawHandVeil(sg, lms, (1 - S.real) * 0.92);
       styleHand(rig);
     } else rig.group.visible = false;

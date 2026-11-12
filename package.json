@@ -8,6 +8,7 @@
     "postinstall": "node scripts/setup-assets.mjs",
     "setup": "node scripts/setup-assets.mjs",
     "extract": "node scripts/extract-anatomy.mjs",
+    "bench": "node scripts/filter-bench.mjs",
     "dev": "vite",
     "dev:phone": "vite --mode phone",
     "build": "vite build",

@@ -98,7 +98,7 @@ export function drawLabels(g, lens) {
   let hx = W / 2, halfW = W * 0.16;
   if (head.found && R.headGroup.visible) {
     lp.fromArray(HEAD_C).applyMatrix4(R.headGroup.matrix);
-    const c = toScreen(lp); lp.x += 10.5 * S.fs * S.fw; const e = toScreen(lp);
+    const c = toScreen(lp); lp.x += 10.5 * S.fs * S.fw * head.autoW; const e = toScreen(lp);
     hx = c.x; halfW = Math.abs(e.x - c.x);
     const items = collectHeadLabels(lens);
     // when the head is turned most points sit on one side, so split nearer the middle of the points to balance the columns

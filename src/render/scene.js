@@ -94,6 +94,6 @@ export function clearStage() {
   R.headGroup.visible = false;
   for (const rig of R.handRigs) rig.group.visible = false;
   R.renderer.clear();
-  for (const id of ["shade", "hud"]) { const c = $(id); c.getContext("2d").clearRect(0, 0, c.width, c.height); }
+  for (const id of ["frame", "shade", "hud"]) { const c = $(id); c.getContext("2d").clearRect(0, 0, c.width, c.height); }
   for (const id of ["gl", "shade"]) { const st = $(id).style; st.maskImage = "none"; st.webkitMaskImage = "none"; }
 }

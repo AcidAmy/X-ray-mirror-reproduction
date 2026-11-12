@@ -2,6 +2,8 @@
 // updateHead / updateHand / renderFrame path the camera uses, so the demo exercises the real pipeline.
 //   #demo          animated
 //   ?still#demo    one fixed frame (for comparing pictures with the original page)
+//   ?face=1.06,0.94#demo   pretend the visitor's face is 6% wider and 6% shorter than the model
+//                          (tests the automatic head-shape fit: it should settle on those numbers)
 //   ?dump#demo     after 1.5 s, flatten all layers into one picture laid over the page (for testing)
 import * as THREE from "three";
 import { R } from "../render/scene.js";
@@ -37,6 +39,7 @@ export function startDemo() {
   const params = new URLSearchParams(location.search), still = params.has("still");
   const META = R.META, base = META.demoHand, cx = base[9][0], cy = base[9][1], cz = base[9][2];
   let running = true, dumped = false;
+  const face = (params.get("face") || "1,1").split(",").map(Number), faceW = face[0] || 1, faceH = face[1] || 1;
   const m = new THREE.Matrix4(), eul = new THREE.Euler(), v = new THREE.Vector3();
   function tick() {
     if (!running) return;
@@ -46,8 +49,8 @@ export function startDemo() {
     m.makeRotationFromEuler(eul.set(-0.06 + 0.05 * Math.sin(t * 0.7), 0.42 * Math.sin(t * 0.5 + 0.9), 0.04, "YXZ"));
     m.setPosition(-5 + 2 * Math.sin(t * 0.4), 1.5, -46);
     const lms = [];
-    for (const id of fitIds) { v.fromArray(META.fit[id]).applyMatrix4(m).applyMatrix4(R.baseProj); lms[id] = { x: (v.x + 1) / 2, y: (1 - v.y) / 2, z: 0 }; }
-    updateHead(m.elements, lms, 0.5 + 0.5 * Math.sin(t * 1.3));
+    for (const id of fitIds) { v.fromArray(META.fit[id]); v.x *= faceW; v.y *= faceH; v.applyMatrix4(m).applyMatrix4(R.baseProj); lms[id] = { x: (v.x + 1) / 2, y: (1 - v.y) / 2, z: 0 }; }
+    updateHead(m.elements, lms, 0.5 + 0.5 * Math.sin(t * 1.3), now);
     // the dataset's right hand, fingers pointing up, palm to the camera, placed at the side of the picture
     const curl = still ? 0 : 0.55 * Math.max(0, Math.sin(t * 0.9));
     const k = 0.0021 * H / W * (4 / 3);

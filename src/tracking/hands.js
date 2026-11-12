@@ -4,17 +4,24 @@ import { R, BONES } from "../render/scene.js";
 import { S } from "../settings.js";
 import { view } from "../state.js";
 import { solidGain } from "../render/layers.js";
+import { OneEuroVec3, stepSeconds } from "../filters.js";
+import { TUNE } from "../tuning.js";
 
 const tmpV = new THREE.Vector3(), vA = new THREE.Vector3(), vB = new THREE.Vector3(), vC = new THREE.Vector3();
 const e1 = new THREE.Vector3(), e2 = new THREE.Vector3(), e3 = new THREE.Vector3(), hm = new THREE.Matrix4();
 
 // lms: 21 hand landmarks in 0..1 picture coordinates. isRight: true for the person's right hand.
-export function updateHand(rig, lms, isRight) {
+// now: timestamp of this frame in milliseconds.
+export function updateHand(rig, lms, isRight, now) {
   const { W, H } = view;
   // tracker coordinates -> stage pixels, with depth scaled like x (closer to the camera = larger z)
-  if (!rig.pts) rig.pts = lms.map(() => new THREE.Vector3());
-  const fresh = !rig.group.visible;
-  lms.forEach((p, i) => { tmpV.set(p.x * W, (1 - p.y) * H, -p.z * W); if (fresh) rig.pts[i].copy(tmpV); else rig.pts[i].lerp(tmpV, 0.65); });
+  if (!rig.pts) { rig.pts = lms.map(() => new THREE.Vector3()); rig.filters = lms.map(() => new OneEuroVec3(TUNE.handPoint)); }
+  const fresh = !rig.group.visible, dt = stepSeconds(now, rig.seen);
+  rig.seen = now;
+  lms.forEach((p, i) => {
+    tmpV.set(p.x * W, (1 - p.y) * H, -p.z * W);
+    if (fresh) { rig.pts[i].copy(tmpV); rig.filters[i].reset(); } else rig.filters[i].step(rig.pts[i], tmpV, dt);
+  });
   const P = rig.pts, sign = isRight ? 1 : -1;
   // palm block (wrist bones + the four finger metacarpals) follows wrist, index knuckle and little-finger knuckle
   e1.subVectors(P[5], P[0]); e2.subVectors(P[17], P[0]);

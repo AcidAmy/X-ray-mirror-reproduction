@@ -14,9 +14,10 @@ export function countFrame(now) {
   if (now - fpsAt >= 1000) {
     fps = Math.round(frames * 1000 / (now - fpsAt)); frames = 0; fpsAt = now;
     $("fps").textContent = fps + " fps";
+    $("autofitv").textContent = S.autofit && head.autoN ? "width " + Math.round(head.autoW * 100) + "%, height " + Math.round(head.autoH * 100) + "%" : "";
   }
 }
-export function resetFps() { frames = 0; fps = 0; fpsAt = performance.now(); $("fps").textContent = ""; }
+export function resetFps() { frames = 0; fps = 0; fpsAt = performance.now(); $("fps").textContent = ""; $("autofitv").textContent = ""; }
 
 export function drawTrackingData(g, now, faceLms, hands, sides) {
   const { W, H } = view;
@@ -38,7 +39,8 @@ export function drawTrackingData(g, now, faceLms, hands, sides) {
                 ["distance", (-head.pos.z).toFixed(0) + " cm (estimate)"],
                 ["turn / nod / tilt", deg(eu.y) + " / " + deg(eu.x) + " / " + deg(eu.z)],
                 ["jaw open", head.jaw.toFixed(2)],
-                ["screen fit", "scale " + head.fitS.toFixed(3) + ", shift " + head.fitX.toFixed(3) + ", " + head.fitY.toFixed(3)]);
+                ["screen fit", "scale " + head.fitS.toFixed(3) + ", shift " + head.fitX.toFixed(3) + ", " + head.fitY.toFixed(3)],
+                ["head shape", S.autofit ? "width " + head.autoW.toFixed(3) + ", height " + head.autoH.toFixed(3) + " (" + head.autoN + " samples)" : "auto fit off"]);
     } else rows.push(["face", "not found"]);
     rows.push(["hands", hands.length ? hands.map((h, i) => sides[i] ? "right" : "left").join(" + ") : "none"]);
     if (hands[0]) rows.push(["index fingertip", (1 - hands[0][8].x).toFixed(2) + ", " + hands[0][8].y.toFixed(2)]);

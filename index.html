@@ -11,6 +11,7 @@
   <div class="stagecol">
     <div class="stage" id="stage">
       <video id="video" playsinline muted autoplay></video>
+      <canvas id="frame"></canvas>
       <canvas id="shade"></canvas>
       <canvas id="gl"></canvas>
       <canvas id="hud"></canvas>
@@ -87,6 +88,7 @@
 
     <div class="panel">
       <h3>Fit to my head</h3>
+      <div class="row"><label class="ck" style="font-weight:600"><input type="checkbox" id="autofit">Auto fit to my face</label><b id="autofitv" class="readout"></b></div>
       <div class="row"><label for="fs">Overall size <b id="fsv"></b></label><input id="fs" type="range" min="0.7" max="1.4" step="0.005"></div>
       <div class="row"><label for="fw">Width <b id="fwv"></b></label><input id="fw" type="range" min="0.8" max="1.25" step="0.005"></div>
       <div class="row"><label for="fh">Height <b id="fhv"></b></label><input id="fh" type="range" min="0.8" max="1.25" step="0.005"></div>
@@ -95,7 +97,7 @@
       <div class="row"><label for="fy">Up / down <b id="fyv"></b></label><input id="fy" type="range" min="-4" max="4" step="0.1"></div>
       <div class="row"><label for="fz">Forward / back <b id="fzv"></b></label><input id="fz" type="range" min="-4" max="4" step="0.1"></div>
       <button class="linkbtn" id="fitreset" type="button">Reset fit</button>
-      <p class="small" style="margin-top:8px">Tip: pick the Solid look and set "Real me showing through" to about half, then line the skull up with your face.</p>
+      <p class="small" style="margin-top:8px">The sliders adjust on top of the automatic fit. Tip: pick the Solid look and set "Real me showing through" to about half, then line the skull up with your face.</p>
     </div>
 
     <p class="small">The anatomy is a real 3D dataset of one adult, scaled and pinned to your head. It shows where structures typically sit, not a scan of you, and it is not a medical tool. Video is processed on this computer and never uploaded.</p>
