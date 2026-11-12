@@ -49,9 +49,14 @@ export function buildScene(META, geos) {
   add("veil", geos.skin, "veil", 0x04070d, 0x04070d, -10, null, 2).material.uniforms.uFade.value = 1;
   add("outline", geos.skin, "outline", 0x6fb6ff, 0x6fb6ff, 1, null, 0).material.uniforms.uFade.value = 1;
   add("muscles", geos.muscles, "muscles", 0xff6b5e, 0xb5453c, 2);
-  add("cranium", geos.cranium, "skull", 0xbfe3ff, 0xe9e2cf, 3);
+  // The dataset files the tooth-bearing upper rim of the lower jaw under the cranium mesh, so it used to stay behind
+  // when the jaw opened. It is a separate, unconnected piece: a horseshoe lying wholly below the upper teeth and
+  // reaching down beside the lower teeth. Pull that piece out of the cranium and hang it on the jaw pivot as well.
+  const [cranium, jawRim] = takePieces(geos.cranium, box => box.max.y < -2.4 && box.min.y < -5.5);
+  add("cranium", cranium, "skull", 0xbfe3ff, 0xe9e2cf, 3);
   const jaw = add("jaw", geos.jaw, "skull", 0xbfe3ff, 0xe9e2cf, 3, jawPivot);
   jaw.position.fromArray(META.jawPivot).multiplyScalar(-1);
+  if (jawRim) add("jawRim", jawRim, "skull", 0xbfe3ff, 0xe9e2cf, 3, jawPivot).position.fromArray(META.jawPivot).multiplyScalar(-1);
   // The dataset stores both eyeballs as one mesh. Split it down the middle so each can turn about its own centre.
   R.eyes.length = 0;
   for (const [tag, geo] of Object.entries(splitLeftRight(geos.eyes))) {
@@ -89,6 +94,45 @@ export function buildScene(META, geos) {
   R.occluder = { scene: new THREE.Scene(), mesh: sheet, texture };
   R.occluder.scene.add(sheet);
   applyStyle(); resize();
+}
+
+// Splits a mesh by its unconnected pieces: returns [everything else, the pieces whose bounding box passes `test`]
+// (the second is null when no piece passes). Vertices at the same position count as joined.
+function takePieces(geo, test) {
+  const pos = geo.getAttribute("position"), idx = geo.getIndex(), n = pos.count;
+  const weld = new Map(), id = new Int32Array(n);
+  for (let i = 0; i < n; i++) {
+    const key = Math.round(pos.getX(i) * 200) + "," + Math.round(pos.getY(i) * 200) + "," + Math.round(pos.getZ(i) * 200);
+    let w = weld.get(key); if (w === undefined) { w = weld.size; weld.set(key, w); }
+    id[i] = w;
+  }
+  const parent = new Int32Array(weld.size).map((_, i) => i);
+  const find = x => { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; };
+  for (let i = 0; i < idx.count; i += 3) { const a = find(id[idx.getX(i)]); parent[find(id[idx.getX(i + 1)])] = a; parent[find(id[idx.getX(i + 2)])] = a; }
+  const boxes = new Map();
+  for (let i = 0; i < n; i++) {
+    const r = find(id[i]); let b = boxes.get(r); if (!b) { b = new THREE.Box3(); boxes.set(r, b); }
+    b.expandByPoint(new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i)));
+  }
+  const picked = new Set(); for (const [r, b] of boxes) if (test(b)) picked.add(r);
+  if (!picked.size) return [geo, null];
+  const build = want => {
+    const remap = new Map(), verts = [], tris = [];
+    for (let i = 0; i < idx.count; i += 3) {
+      if (picked.has(find(id[idx.getX(i)])) !== want) continue;
+      for (let k = 0; k < 3; k++) {
+        const v = idx.getX(i + k);
+        if (!remap.has(v)) { remap.set(v, verts.length / 3); verts.push(pos.getX(v), pos.getY(v), pos.getZ(v)); }
+        tris.push(remap.get(v));
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(verts), 3));
+    g.setIndex(new THREE.BufferAttribute(new Uint16Array(tris), 1));
+    g.computeVertexNormals();
+    return g;
+  };
+  return [build(false), build(true)];
 }
 
 // Splits a mesh into the part on the person's left (+x) and the part on their right (-x).

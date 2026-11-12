@@ -3,10 +3,12 @@
 //   anatomy.bin  for every mesh: positions as 16-bit values quantised inside the mesh's bounding box,
 //                then 16-bit triangle indices. Little-endian, exactly as embedded in the original page.
 import * as THREE from "three";
-import { fetchBytes } from "../net.js";
+import { fetchBytes, embedded, embeddedText } from "../net.js";
 
 // onProgress(fraction 0..1) follows the download of the mesh data.
 export async function loadAnatomy(baseUrl, onProgress) {
+  const metaText = embeddedText("meta"), bin = metaText && embedded("anatomy");     // single-file build carries both
+  if (bin) return { META: JSON.parse(metaText), geos: decodeMeshes(JSON.parse(metaText), bin.buffer) };
   const [metaRes, bytes] = await Promise.all([
     fetch(baseUrl + "anatomy/meta.json"),
     fetchBytes(baseUrl + "anatomy/anatomy.bin", onProgress && ((got, total) => onProgress(total ? got / total : 0)))]);

@@ -4,3 +4,4 @@ public/wasm/
 public/models/
 .DS_Store
 *.log
+share/

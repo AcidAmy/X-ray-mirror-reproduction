@@ -130,7 +130,7 @@ if (location.hash === "#demo") runDemo();
 else if (KIOSK) runCamera();                               // exhibit mode starts by itself (the camera must already be allowed)
 
 // Offline cache: after the first visit the page, models and runtime load from this device (see public/sw.js).
-if (import.meta.env.PROD && "serviceWorker" in navigator)
+if (import.meta.env.PROD && "serviceWorker" in navigator && location.protocol.startsWith("http") && !document.getElementById("embed-anatomy"))
   window.addEventListener("load", () => navigator.serviceWorker.register(import.meta.env.BASE_URL + "sw.js").catch(() => {}));
 
 // Read-only handle for checking the scene from the browser console.

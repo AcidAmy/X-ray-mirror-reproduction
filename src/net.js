@@ -27,3 +27,17 @@ export function setProgress(fraction) {
   bar.hidden = fraction === null;
   if (fraction !== null) $("loadfill").style.width = Math.round(Math.min(1, Math.max(0, fraction)) * 100) + "%";
 }
+
+// Single-file build: scripts/build-single.mjs embeds data in the page as <script id="embed-..."> blocks holding
+// base64 (or JSON text). Returns the decoded bytes, or null when the page carries no such block.
+export function embedded(id) {
+  const el = typeof document !== "undefined" && document.getElementById("embed-" + id);
+  if (!el) return null;
+  const bin = atob(el.textContent.trim()), out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+export function embeddedText(id) {
+  const el = typeof document !== "undefined" && document.getElementById("embed-" + id);
+  return el ? el.textContent : null;
+}
