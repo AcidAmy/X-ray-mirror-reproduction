@@ -1,0 +1,22 @@
+{
+  "name": "x-ray-mirror",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Real-time X-Ray Mirror: skull, brain, muscles and hand bones pinned to your own head and hands in the browser.",
+  "scripts": {
+    "postinstall": "node scripts/setup-assets.mjs",
+    "setup": "node scripts/setup-assets.mjs",
+    "extract": "node scripts/extract-anatomy.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "0.10.14",
+    "three": "0.160.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.11"
+  }
+}
