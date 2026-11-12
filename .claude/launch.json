@@ -4,13 +4,32 @@
     {
       "name": "dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 5173
+    },
+    {
+      "name": "dev-phone",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:phone"
+      ],
+      "port": 5174,
+      "url": "https://localhost:5174"
     },
     {
       "name": "original-static",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "5510", "--bind", "127.0.0.1"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5510",
+        "--bind",
+        "127.0.0.1"
+      ],
       "port": 5510
     }
   ]

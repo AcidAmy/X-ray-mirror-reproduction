@@ -20,6 +20,21 @@ npm run dev
 
 `npm install` 结束时会自动运行 `scripts/setup-assets.mjs`：把 MediaPipe 的 wasm 运行时复制到 `public/wasm/`，并把人脸、手部两个追踪模型（共约 11.6 MB）下载到 `public/models/`。下载失败不影响使用，页面会改为在线加载这些文件。之后可以用 `npm run setup` 重试。
 
+## 在手机上测试
+
+手机浏览器只在 HTTPS 页面上开放摄像头，所以要用带自签名证书的模式：
+
+```bash
+npm run dev:phone
+```
+
+1. 手机和电脑连同一个 Wi‑Fi。
+2. 终端会显示一个 `Network: https://192.168.x.x:5174/` 地址，在手机浏览器里打开它（注意是 `https`）。
+3. 浏览器会提示证书不受信任，因为证书是本机临时生成的。iPhone 的 Safari 点"显示详细信息"→"访问此网站"，安卓的 Chrome 点"高级"→"继续前往"。
+4. 点 **Start camera** 并允许摄像头。
+
+首次加载要下载约 20 MB。如果手机打不开这个地址，检查电脑防火墙是否放行了 5174 端口，以及路由器是否开启了"AP 隔离"。
+
 ## 技术栈
 
 | 依赖 | 版本 | 说明 |
