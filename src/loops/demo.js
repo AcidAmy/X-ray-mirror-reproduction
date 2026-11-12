@@ -10,6 +10,7 @@ import { R } from "../render/scene.js";
 import { $, view, setStatus } from "../state.js";
 import { head, fitIds, updateHead } from "../tracking/head.js";
 import { renderFrame } from "../frame.js";
+import { addFrameCost, setTarget } from "../quality.js";
 
 const FINGERS = [[5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16], [17, 18, 19, 20]];
 
@@ -39,6 +40,7 @@ export function startDemo() {
   const params = new URLSearchParams(location.search), still = params.has("still");
   const META = R.META, base = META.demoHand, cx = base[9][0], cy = base[9][1], cz = base[9][2];
   let running = true, dumped = false;
+  setTarget(60);
   const face = (params.get("face") || "1,1").split(",").map(Number), faceW = face[0] || 1, faceH = face[1] || 1;
   const m = new THREE.Matrix4(), eul = new THREE.Euler(), v = new THREE.Vector3();
   function tick() {
@@ -47,15 +49,18 @@ export function startDemo() {
     const { W, H } = view;
     const now = performance.now(), t = still ? 1.2 : now / 1000;
     m.makeRotationFromEuler(eul.set(-0.06 + 0.05 * Math.sin(t * 0.7), 0.42 * Math.sin(t * 0.5 + 0.9), 0.04, "YXZ"));
-    m.setPosition(-5 + 2 * Math.sin(t * 0.4), 1.5, -46);
+    // On an upright (phone) screen the head moves to the top half and further back, with the hand below it.
+    const tall = !still && W < H * 0.8;
+    if (tall) m.setPosition(1.5 * Math.sin(t * 0.4), 7, -64); else m.setPosition(-5 + 2 * Math.sin(t * 0.4), 1.5, -46);
     const lms = [];
     for (const id of fitIds) { v.fromArray(META.fit[id]); v.x *= faceW; v.y *= faceH; v.applyMatrix4(m).applyMatrix4(R.baseProj); lms[id] = { x: (v.x + 1) / 2, y: (1 - v.y) / 2, z: 0 }; }
     updateHead(m.elements, lms, 0.5 + 0.5 * Math.sin(t * 1.3), now);
     // the dataset's right hand, fingers pointing up, palm to the camera, placed at the side of the picture
     const curl = still ? 0 : 0.55 * Math.max(0, Math.sin(t * 0.9));
-    const k = 0.0021 * H / W * (4 / 3);
-    const hand = curlHand(base, curl).map(p => ({ x: 0.2 - (p.x - cx) * k, y: 0.56 + (p.z - cz) * k * W / H, z: (p.y - cy) * k }));
+    const k = 0.0021 * H / W * (4 / 3) * (tall ? 0.6 : 1), hx = tall ? 0.42 : 0.2, hy = tall ? 0.72 : 0.56;
+    const hand = curlHand(base, curl).map(p => ({ x: hx - (p.x - cx) * k, y: hy + (p.z - cz) * k * W / H, z: (p.y - cy) * k }));
     renderFrame(now, fitIds.map(id => lms[id]), [hand], [true]);
+    addFrameCost(performance.now() - now);
     if (params.has("dump") && now > 1500 && !dumped) {      // flatten the layers into one picture for testing
       dumped = true;
       const c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");

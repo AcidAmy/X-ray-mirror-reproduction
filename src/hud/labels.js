@@ -42,7 +42,7 @@ function collectHeadLabels(lens) {
 }
 
 function layoutLabels(g, items, cx, halfWidth, key, splitX) {
-  const { W, H } = view;
+  const { x0, y0, x1, y1 } = view.vis;              // the part of the stage that is on screen
   if (splitX === undefined) splitX = cx;            // where "left of the subject" ends and "right" begins
   // two columns beside the subject; each label joins the column on its own side, then they are spread so none overlap
   const cols = { left: [], right: [] };
@@ -73,13 +73,14 @@ function layoutLabels(g, items, cx, halfWidth, key, splitX) {
     list.forEach((it, i) => { it.st.rank = i; it.st.rankSide = side; });
     let prev = -1e9;
     for (const it of list) { it.ty = Math.max(it.st.wy, prev + gap); prev = it.ty; }
-    const over = prev - (H - 12); if (over > 0) for (const it of list) it.ty -= over;      // keep the stack on screen
-    let tx = side === "left" ? Math.max(8, cx - halfWidth - 22) : Math.min(W - 8, cx + halfWidth + 22);
+    const over = prev - (y1 - 12); if (over > 0) for (const it of list) it.ty -= over;     // keep the stack on screen
+    const under = (y0 + 12) - (list.length ? list[0].ty : 0); if (under > 0 && over <= 0) for (const it of list) it.ty += Math.min(under, (y1 - 12) - prev);
+    let tx = side === "left" ? Math.max(x0 + 8, cx - halfWidth - 22) : Math.min(x1 - 8, cx + halfWidth + 22);
     // Fix over the original: the text grows away from the subject, so near a picture edge it ran off the stage.
     // Pull the column inwards just far enough for its widest label to fit.
     let widest = 0; for (const it of list) widest = Math.max(widest, g.measureText(it.text).width);
-    if (side === "left") tx = Math.max(tx, Math.min(widest + 8, W - 8));
-    else tx = Math.min(tx, Math.max(W - 8 - widest, 8));
+    if (side === "left") tx = Math.max(tx, Math.min(x0 + widest + 8, x1 - 8));
+    else tx = Math.min(tx, Math.max(x1 - 8 - widest, x0 + 8));
     for (const it of list) {
       const y = it.ty;
       g.strokeStyle = it.color; g.globalAlpha = 0.75; g.lineWidth = 1;

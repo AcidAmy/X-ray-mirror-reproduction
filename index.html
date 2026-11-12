@@ -2,46 +2,62 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090c13">
 <title>X-Ray Mirror</title>
 <link rel="stylesheet" href="./src/styles.css">
 </head>
 <body>
-<div class="wrap">
-  <div class="stagecol">
-    <div class="stage" id="stage">
-      <video id="video" playsinline muted autoplay></video>
-      <canvas id="frame"></canvas>
-      <canvas id="shade"></canvas>
-      <canvas id="gl"></canvas>
-      <canvas id="hud"></canvas>
-      <div id="intro">
-        <h2>X-RAY MIRROR</h2>
-        <p>See the skull, brain and muscles inside your own head, tracked live through your camera. Hold a hand up to see its bones.</p>
-        <div class="introbtns">
-          <button class="big" id="start">Start camera</button>
-          <button class="ghost" id="trydemo" type="button">Try the demo (no camera)</button>
-        </div>
-      </div>
+<!-- The picture fills the whole window. #stage keeps the camera's own shape and is scaled to cover the window,
+     so tracker coordinates still map straight onto it; whatever sticks out past the window is simply cropped. -->
+<div class="viewport" id="viewport">
+  <div class="stage" id="stage">
+    <video id="video" playsinline muted autoplay></video>
+    <canvas id="frame"></canvas>
+    <canvas id="shade"></canvas>
+    <canvas id="gl"></canvas>
+    <canvas id="hud"></canvas>
+  </div>
+
+  <div id="intro">
+    <h2>X-RAY MIRROR</h2>
+    <p>See the skull, brain and muscles inside your own head, tracked live through your camera. Hold a hand up to see its bones.</p>
+    <div class="introbtns">
+      <button class="big" id="start">Start camera</button>
+      <button class="ghost" id="trydemo" type="button">Try the demo (no camera)</button>
     </div>
   </div>
 
-  <aside>
-    <h1>X-Ray Mirror</h1>
-    <div class="panel">
-      <div class="statusrow"><div id="status">Click Start camera, then allow the camera.</div><span id="fps"></span></div>
-      <button class="linkbtn" id="tocamera" type="button" hidden>Switch to the camera</button>
-    </div>
+  <div id="hint" hidden>
+    <b>Step in front of the camera</b>
+    <span>Face the screen and hold up a hand</span>
+  </div>
+
+  <header class="topbar">
+    <span class="brand">X-Ray Mirror</span>
+    <span class="pill"><span id="status">Click Start camera, then allow the camera.</span><span id="fps"></span></span>
+    <button class="linkbtn" id="tocamera" type="button" hidden>Switch to the camera</button>
+  </header>
+
+  <nav class="quick" id="quick" aria-label="Quick controls">
+    <button data-preset="skull">Skull</button>
+    <button data-preset="brain">Brain</button>
+    <button data-preset="muscles">Muscles</button>
+    <button data-preset="all">Everything</button>
+    <i class="sep"></i>
+    <button id="q_style" type="button" title="Switch between X-ray and Solid">Solid</button>
+    <button id="q_labels" type="button" title="Show or hide the anatomy labels">Labels</button>
+    <i class="sep"></i>
+    <button id="q_settings" type="button" title="All settings" aria-expanded="false">Settings</button>
+    <button id="q_full" type="button" title="Full screen">Full screen</button>
+  </nav>
+
+  <aside id="drawer" hidden>
+    <div class="drawerhead"><b>Settings</b><button class="linkbtn" id="drawerclose" type="button">Close</button></div>
 
     <div class="panel">
       <h3>Layers</h3>
-      <div class="chips">
-        <button data-preset="skull">Skull</button>
-        <button data-preset="brain">Brain</button>
-        <button data-preset="muscles">Muscles</button>
-        <button data-preset="all">Everything</button>
-      </div>
-      <div class="checks">
+      <div class="checks" style="margin-top:0">
         <label class="ck"><input type="checkbox" id="L_skull"><i style="background:#bfe3ff"></i>Skull</label>
         <label class="ck"><input type="checkbox" id="L_brain"><i style="background:#ff9fc0"></i>Brain</label>
         <label class="ck"><input type="checkbox" id="L_muscles"><i style="background:#ff6b5e"></i>Muscles</label>

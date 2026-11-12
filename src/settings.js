@@ -39,8 +39,13 @@ export function syncUI() {
   $("cutlabel").textContent = S.reveal === "lens" ? "Lens size" : "Cut position";
 }
 
+// Back to the defaults (exhibit mode does this when a visitor has left).
+let styleChanged = () => {};
+export function resetAll() { Object.assign(S, DEFAULTS); save(); syncUI(); styleChanged(); }
+
 // onStyle runs when the X-ray / Solid look changes (materials need their blending switched).
 export function initSettings(onStyle) {
+  styleChanged = onStyle;
   load();
   for (const k of LAYERS) $("L_" + k).onchange = e => { S[k] = e.target.checked; save(); };
   for (const b of $("style").children) b.onclick = () => { S.style = b.dataset.style; save(); syncUI(); onStyle(); };

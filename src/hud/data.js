@@ -3,6 +3,8 @@ import * as THREE from "three";
 import { S, LAYERS } from "../settings.js";
 import { $, view } from "../state.js";
 import { head } from "../tracking/head.js";
+import { quality, evaluate } from "../quality.js";
+import { resize } from "../render/scene.js";
 
 let frames = 0, fps = 0, fpsAt = 0, dataAt = 0;
 const HAND_CHAINS = [[0,1,2,3,4],[0,5,6,7,8],[5,9,10,11,12],[9,13,14,15,16],[13,17,18,19,20],[0,17]];
@@ -14,6 +16,7 @@ export function countFrame(now) {
   if (now - fpsAt >= 1000) {
     fps = Math.round(frames * 1000 / (now - fpsAt)); frames = 0; fpsAt = now;
     $("fps").textContent = fps + " fps";
+    if (evaluate(fps)) resize();                             // hold the frame rate by adjusting the render resolution
     $("autofitv").textContent = S.autofit && head.autoN ? "width " + Math.round(head.autoW * 100) + "%, height " + Math.round(head.autoH * 100) + "%" : "";
   }
 }
@@ -44,7 +47,8 @@ export function drawTrackingData(g, now, faceLms, hands, sides) {
     } else rows.push(["face", "not found"]);
     rows.push(["hands", hands.length ? hands.map((h, i) => sides[i] ? "right" : "left").join(" + ") : "none"]);
     if (hands[0]) rows.push(["index fingertip", (1 - hands[0][8].x).toFixed(2) + ", " + hands[0][8].y.toFixed(2)]);
-    rows.push(["layers", LAYERS.filter(k => S[k]).join(", ") || "none"], ["speed", fps + " frames/s"]);
+    rows.push(["layers", LAYERS.filter(k => S[k]).join(", ") || "none"], ["speed", fps + " frames/s"],
+              ["render", quality.ratio + "x resolution, " + quality.costMs.toFixed(1) + " ms per frame"]);
     $("data").textContent = rows.map(r => pad(r[0]) + r[1]).join("\n");
   }
 }

@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { makeMat } from "./shaders.js";
 import { $, view } from "../state.js";
 import { S } from "../settings.js";
+import { quality } from "../quality.js";
 
 // Finger bones as pairs of MediaPipe hand landmark numbers (thumb, index, middle, ring, little finger).
 export const BONES = [[1,2],[2,3],[3,4],[5,6],[6,7],[7,8],[9,10],[10,11],[11,12],[13,14],[14,15],[15,16],[17,18],[18,19],[19,20]];
@@ -79,8 +80,13 @@ export function applyStyle() {
 export function resize() {
   const r = $("stage").getBoundingClientRect();
   view.W = Math.max(2, Math.round(r.width)); view.H = Math.max(2, Math.round(r.height));
+  // the window, in stage pixels, minus room for the top bar and the quick bar
+  const vw = window.innerWidth, vh = window.innerHeight, v = view.vis;
+  v.x0 = Math.max(0, -r.left); v.x1 = Math.min(view.W, vw - r.left);
+  v.y0 = Math.max(0, -r.top) + 52; v.y1 = Math.min(view.H, vh - r.top) - 76;
+  if (v.y1 - v.y0 < 80) { v.y0 = Math.max(0, -r.top); v.y1 = Math.min(view.H, vh - r.top); }
   if (R.renderer) {
-    R.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    R.renderer.setPixelRatio(quality.ratio);
     R.renderer.setSize(view.W, view.H, false);
     R.cam.aspect = view.W / view.H; R.cam.updateProjectionMatrix(); R.baseProj = R.cam.projectionMatrix.clone();
     R.ortho.right = view.W; R.ortho.top = view.H; R.ortho.updateProjectionMatrix();
