@@ -9,12 +9,15 @@ import { TUNE } from "../tuning.js";
 
 export const head = { found: false, pos: new THREE.Vector3(), quat: new THREE.Quaternion(), scl: new THREE.Vector3(1, 1, 1),
                       fitS: 1, fitX: 0, fitY: 0, jaw: 0, lms: null,
+                      // where each eye looks, radians: yaw > 0 towards the person's left, pitch > 0 downwards
+                      gaze: { yawL: 0, pitchL: 0, yawR: 0, pitchR: 0 },
                       // automatic head-shape fit: how much wider / taller / deeper this person's head is than the model
                       autoW: 1, autoH: 1, autoD: 1, autoN: 0 };
 const tmpM = new THREE.Matrix4(), tmpP = new THREE.Vector3(), tmpQ = new THREE.Quaternion(), tmpS = new THREE.Vector3();
 const tmpV = new THREE.Vector3(), fitM = new THREE.Matrix4(), corr = new THREE.Matrix4(), eul = new THREE.Euler();
 
 const fPos = new OneEuroVec3(TUNE.headPos), fScl = new OneEuroVec3(TUNE.headScale), fRot = new OneEuroQuat(TUNE.headRot);
+const fGaze = { yawL: new OneEuro(TUNE.gaze), pitchL: new OneEuro(TUNE.gaze), yawR: new OneEuro(TUNE.gaze), pitchR: new OneEuro(TUNE.gaze) };
 const fFitS = new OneEuro(TUNE.fitScale), fFitX = new OneEuro(TUNE.fitShift), fFitY = new OneEuro(TUNE.fitShift), fJaw = new OneEuro(TUNE.jaw);
 let lastT = 0, lastSeenT = -1e9;
 
@@ -25,9 +28,18 @@ export function initHead(META) { fitIds.length = 0; for (const k of Object.keys(
 export function resetHead() { head.found = false; head.lms = null; head.jaw = 0; lastSeenT = -1e9; resetAutoFit(); }
 function resetAutoFit() { head.autoW = head.autoH = head.autoD = 1; head.autoN = 0; }
 
+// Turns the tracker's eye "blendshape" scores (each 0..1) into eye angles.
+// Names follow the person: eyeLookOutLeft = their left eye looking further to their left.
+export function gazeFromBlendshapes(score) {
+  const E = TUNE.eyes, L = E.flipSides ? "Right" : "Left", Rt = E.flipSides ? "Left" : "Right";
+  const g = n => score[n] || 0;
+  return { yawL: (g("eyeLookOut" + L) - g("eyeLookIn" + L)) * E.maxYaw, pitchL: (g("eyeLookDown" + L) - g("eyeLookUp" + L)) * E.maxPitch,
+           yawR: (g("eyeLookIn" + Rt) - g("eyeLookOut" + Rt)) * E.maxYaw, pitchR: (g("eyeLookDown" + Rt) - g("eyeLookUp" + Rt)) * E.maxPitch };
+}
+
 // matrixData: the tracker's 4x4 head transform (cm, camera space). lms: face landmarks in 0..1 picture coordinates.
-// now: timestamp of this frame in milliseconds.
-export function updateHead(matrixData, lms, jawOpen, now) {
+// now: timestamp of this frame in milliseconds. gaze: eye angles (see gazeFromBlendshapes) or null.
+export function updateHead(matrixData, lms, jawOpen, now, gaze) {
   const { cam, baseProj, headGroup, jawPivot, META } = R;
   tmpM.fromArray(matrixData);
   const e = tmpM.elements;                               // accept either memory layout
@@ -42,6 +54,14 @@ export function updateHead(matrixData, lms, jawOpen, now) {
   } else {
     fPos.step(head.pos, tmpP, dt); fRot.step(head.quat, tmpQ, dt); fScl.step(head.scl, tmpS, dt);
     head.jaw = fJaw.filter(jawOpen, dt);
+  }
+  for (const k in fGaze) {
+    const target = gaze ? gaze[k] : 0;
+    if (fresh) { fGaze[k].reset(target); head.gaze[k] = target; } else head.gaze[k] = fGaze[k].filter(target, dt);
+  }
+  if (R.eyes.length === 2) {
+    R.eyes[0].pivot.rotation.set(head.gaze.pitchL, head.gaze.yawL, 0);
+    R.eyes[1].pivot.rotation.set(head.gaze.pitchR, head.gaze.yawR, 0);
   }
   head.found = true; head.lms = lms;
   tmpM.compose(head.pos, head.quat, head.scl);           // smoothed pose

@@ -5,7 +5,8 @@ import { R } from "./render/scene.js";
 import { S } from "./settings.js";
 import { $, view } from "./state.js";
 import { head } from "./tracking/head.js";
-import { updateHand, styleHand, drawHandVeil } from "./tracking/hands.js";
+import { updateHand, styleHand, drawHandVeil, buildHandMask } from "./tracking/hands.js";
+import { TUNE } from "./tuning.js";
 import { applyLayers } from "./render/layers.js";
 import { lensFor } from "./reveal.js";
 import { drawLabels } from "./hud/labels.js";
@@ -19,18 +20,18 @@ export function initPointer() {
 }
 
 // faceLms: face landmarks or null. hands: array of 21-landmark arrays. sides[i]: true when hands[i] is a right hand.
-export function renderFrame(now, faceLms, hands, sides) {
+// handsWorld[i]: the same joints of hands[i] in metres (optional).
+export function renderFrame(now, faceLms, hands, sides, handsWorld = []) {
   const { W, H } = view, { renderer, handRigs, headGroup } = R;
   // hands
   const sg = $("shade").getContext("2d"); sg.clearRect(0, 0, W, H);
+  const handMask = buildHandMask(hands);
   handRigs.forEach((rig, i) => {
     const lms = hands[i];
-    if (lms && S.hands) {
-      updateHand(rig, lms, sides[i], now);
-      drawHandVeil(sg, lms, (1 - S.real) * 0.92);
-      styleHand(rig);
-    } else rig.group.visible = false;
+    if (lms && S.hands) { updateHand(rig, lms, sides[i], now, handsWorld[i]); styleHand(rig); }
+    else rig.group.visible = false;
   });
+  if (handMask && S.hands) drawHandVeil(sg, handMask, (1 - S.real) * 0.92);
   if (!head.found) headGroup.visible = false;
   applyLayers();
 
@@ -40,6 +41,12 @@ export function renderFrame(now, faceLms, hands, sides) {
 
   renderer.clear();
   renderer.render(R.headScene, R.cam);
+  // a hand held in front of the face hides the anatomy behind it: wipe the head where the hand silhouette is
+  if (handMask && TUNE.occludeHeadByHands && headGroup.visible) {
+    const tex = R.occluder.texture;
+    tex.image = handMask.canvas; tex.needsUpdate = true;
+    renderer.render(R.occluder.scene, R.ortho);
+  }
   renderer.clearDepth();
   renderer.render(R.handScene, R.ortho);
 

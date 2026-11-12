@@ -4,6 +4,7 @@
 //   ?still#demo    one fixed frame (for comparing pictures with the original page)
 //   ?face=1.06,0.94#demo   pretend the visitor's face is 6% wider and 6% shorter than the model
 //                          (tests the automatic head-shape fit: it should settle on those numbers)
+//   ?handx=0.45#demo       put the hand at that horizontal position (0.45 is over the face: tests occlusion)
 //   ?dump#demo     after 1.5 s, flatten all layers into one picture laid over the page (for testing)
 import * as THREE from "three";
 import { R } from "../render/scene.js";
@@ -30,6 +31,14 @@ function curlHand(base, angle) {
       for (let k = j + 1; k < 4; k++) pts[chain[k]].sub(pivot).applyAxisAngle(axis, dir * angle * (j === 0 ? 0.8 : 1)).add(pivot);
     }
   }
+  // Cup the palm as the fingers close: the ring and little-finger rays fold towards the palm about the line from
+  // the wrist to the middle knuckle. This moves the knuckles off the flat board and exercises the bending palm.
+  const spine = new THREE.Vector3().subVectors(pts[9], pts[0]).normalize(), wrist = pts[0].clone();
+  const probe = new THREE.Vector3().subVectors(pts[17], wrist);
+  const cdir = probe.clone().applyAxisAngle(spine, 0.3).y < probe.y ? 1 : -1;
+  [[13, 14, 15, 16, 0.3], [17, 18, 19, 20, 0.6]].forEach(c => {
+    for (let n = 0; n < 4; n++) pts[c[n]].sub(wrist).applyAxisAngle(spine, cdir * angle * c[4]).add(wrist);
+  });
   return pts;
 }
 
@@ -54,12 +63,16 @@ export function startDemo() {
     if (tall) m.setPosition(1.5 * Math.sin(t * 0.4), 7, -64); else m.setPosition(-5 + 2 * Math.sin(t * 0.4), 1.5, -46);
     const lms = [];
     for (const id of fitIds) { v.fromArray(META.fit[id]); v.x *= faceW; v.y *= faceH; v.applyMatrix4(m).applyMatrix4(R.baseProj); lms[id] = { x: (v.x + 1) / 2, y: (1 - v.y) / 2, z: 0 }; }
-    updateHead(m.elements, lms, 0.5 + 0.5 * Math.sin(t * 1.3), now);
+    // the eyes sweep left and right and a little up and down (they stay still in the fixed test frame)
+    const gy = still ? 0 : 0.42 * Math.sin(t * 1.1), gp = still ? 0 : 0.2 * Math.sin(t * 0.7);
+    updateHead(m.elements, lms, 0.5 + 0.5 * Math.sin(t * 1.3), now, { yawL: gy, pitchL: gp, yawR: gy, pitchR: gp });
     // the dataset's right hand, fingers pointing up, palm to the camera, placed at the side of the picture
     const curl = still ? 0 : 0.55 * Math.max(0, Math.sin(t * 0.9));
-    const k = 0.0021 * H / W * (4 / 3) * (tall ? 0.6 : 1), hx = tall ? 0.42 : 0.2, hy = tall ? 0.72 : 0.56;
-    const hand = curlHand(base, curl).map(p => ({ x: hx - (p.x - cx) * k, y: hy + (p.z - cz) * k * W / H, z: (p.y - cy) * k }));
-    renderFrame(now, fitIds.map(id => lms[id]), [hand], [true]);
+    const k = 0.0021 * H / W * (4 / 3) * (tall ? 0.6 : 1), hx = params.has("handx") ? Number(params.get("handx")) : tall ? 0.42 : 0.2, hy = tall && !params.has("handx") ? 0.72 : 0.56;
+    const pose = curlHand(base, curl);
+    const handWorld = pose.map(p => ({ x: p.x / 1000, y: p.y / 1000, z: p.z / 1000 }));     // the dataset is in millimetres
+    const hand = pose.map(p => ({ x: hx - (p.x - cx) * k, y: hy + (p.z - cz) * k * W / H, z: (p.y - cy) * k }));
+    renderFrame(now, fitIds.map(id => lms[id]), [hand], [true], [handWorld]);
     addFrameCost(performance.now() - now);
     if (params.has("dump") && now > 1500 && !dumped) {      // flatten the layers into one picture for testing
       dumped = true;

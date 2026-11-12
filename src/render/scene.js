@@ -15,6 +15,8 @@ export const R = {
   ortho: null,        // pixel-space camera for the hands (the tracker reports hand points on screen)
   baseProj: null,     // the head camera's projection before the per-frame screen-fit correction
   headGroup: null, jawPivot: null,
+  eyes: [],           // [left (+x), right (-x)]: { pivot } groups that turn each eyeball about its own centre
+  occluder: null,     // { scene, mesh, texture }: erases the head where a hand is in front of it
   meshes: {},         // name -> { mesh, layer, fixedMode }
   handRigs: [],       // two hands, each: { group, palm, bones[], pts }
   META: null
@@ -37,7 +39,8 @@ export function buildScene(META, geos) {
     const mesh = new THREE.Mesh(geo, makeMat(xray, solid, mode));
     mesh.renderOrder = order; mesh.frustumCulled = false;
     (parent || headGroup).add(mesh);
-    R.meshes[name] = { mesh, layer, fixedMode: mode };
+    // pivot: a group between the head and this mesh that moves it (jaw, eyeballs); the shader needs it to cut correctly
+    R.meshes[name] = { mesh, layer, fixedMode: mode, pivot: parent || null };
     return mesh;
   };
   add("veil", geos.skin, "veil", 0x04070d, 0x04070d, -10, null, 2).material.uniforms.uFade.value = 1;
@@ -46,7 +49,21 @@ export function buildScene(META, geos) {
   add("cranium", geos.cranium, "skull", 0xbfe3ff, 0xe9e2cf, 3);
   const jaw = add("jaw", geos.jaw, "skull", 0xbfe3ff, 0xe9e2cf, 3, jawPivot);
   jaw.position.fromArray(META.jawPivot).multiplyScalar(-1);
-  add("eyes", geos.eyes, "eyes", 0xfff3a8, 0xf4f4ee, 4);
+  // The dataset stores both eyeballs as one mesh. Split it down the middle so each can turn about its own centre.
+  R.eyes.length = 0;
+  for (const [tag, geo] of Object.entries(splitLeftRight(geos.eyes))) {
+    geo.computeBoundingBox();
+    const centre = centroid(geo), reach = geo.boundingBox.max.z - centre.z;      // reach: centre to the front of the cornea
+    const pivot = new THREE.Group(); pivot.position.copy(centre); headGroup.add(pivot);
+    add("eye" + tag, geo, "eyes", 0xfff3a8, 0xf4f4ee, 4, pivot).position.copy(centre).multiplyScalar(-1);
+    // The dataset eyeball has a cornea but no markings, so a turning eye would look the same as a still one.
+    // A thin ring for the iris and a small disc for the pupil make the direction of gaze readable.
+    const iris = add("iris" + tag, new THREE.TorusGeometry(reach * 0.36, reach * 0.035, 8, 40), "eyes", 0xfff3a8, 0x3b5368, 4, pivot);
+    iris.position.z = reach * 0.93;
+    const pupil = add("pupil" + tag, new THREE.CircleGeometry(reach * 0.17, 24), "eyes", 0xfff3a8, 0x0b0b0d, 4, pivot);
+    pupil.position.z = reach * 1.005;
+    R.eyes.push({ pivot });
+  }
   add("cerebrum", geos.cerebrum, "brain", 0xff9fc0, 0xe2a39d, 5);
   add("hindbrain", geos.hindbrain, "brain", 0xffc37a, 0xd6ad84, 5);
 
@@ -54,10 +71,49 @@ export function buildScene(META, geos) {
     const group = new THREE.Group(); group.visible = false; R.handScene.add(group);
     const mk = geo => { const m = new THREE.Mesh(geo, makeMat(0xd9f0ff, 0xe9e2cf)); m.material.uniforms.uOrtho.value = 1;
                         m.matrixAutoUpdate = false; m.frustumCulled = false; group.add(m); return m; };
-    R.handRigs.push({ group, palm: mk(geos.hand_palm), bones: BONES.map(([a, b]) => mk(geos["hand_b_" + a + "_" + b])),
+    // each hand needs its own copy of the palm, because the palm is reshaped every frame to follow the knuckles
+    R.handRigs.push({ group, palm: mk(geos.hand_palm.clone()), bones: BONES.map(([a, b]) => mk(geos["hand_b_" + a + "_" + b])),
                       pts: null, seen: 0 });
   }
+  // Occluder: a screen-sized sheet carrying the hand silhouette. Drawn between the head and the hands with a blend
+  // that multiplies what is already there by (1 - silhouette), it wipes the head out wherever a hand covers it.
+  const texture = new THREE.Texture(); texture.minFilter = texture.magFilter = THREE.LinearFilter; texture.generateMipmaps = false;
+  const sheet = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({
+    map: texture, transparent: true, depthTest: false, depthWrite: false, blending: THREE.CustomBlending,
+    blendEquation: THREE.AddEquation, blendSrc: THREE.ZeroFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
+    blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor }));
+  sheet.frustumCulled = false;
+  R.occluder = { scene: new THREE.Scene(), mesh: sheet, texture };
+  R.occluder.scene.add(sheet);
   applyStyle(); resize();
+}
+
+// Splits a mesh into the part on the person's left (+x) and the part on their right (-x).
+function splitLeftRight(geo) {
+  const pos = geo.getAttribute("position"), idx = geo.getIndex();
+  const out = {};
+  for (const [tag, sign] of [["L", 1], ["R", -1]]) {
+    const remap = new Map(), verts = [], tris = [];
+    for (let i = 0; i < idx.count; i += 3) {
+      const a = idx.getX(i), b = idx.getX(i + 1), c = idx.getX(i + 2);
+      if ((pos.getX(a) + pos.getX(b) + pos.getX(c)) * sign <= 0) continue;
+      for (const v of [a, b, c]) {
+        if (!remap.has(v)) { remap.set(v, verts.length / 3); verts.push(pos.getX(v), pos.getY(v), pos.getZ(v)); }
+        tris.push(remap.get(v));
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(verts), 3));
+    g.setIndex(new THREE.BufferAttribute(new Uint16Array(tris), 1));
+    g.computeVertexNormals();
+    out[tag] = g;
+  }
+  return out;
+}
+function centroid(geo) {
+  const pos = geo.getAttribute("position"), c = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) { c.x += pos.getX(i); c.y += pos.getY(i); c.z += pos.getZ(i); }
+  return c.divideScalar(pos.count);
 }
 
 function eachMat(fn) {
@@ -90,6 +146,7 @@ export function resize() {
     R.renderer.setSize(view.W, view.H, false);
     R.cam.aspect = view.W / view.H; R.cam.updateProjectionMatrix(); R.baseProj = R.cam.projectionMatrix.clone();
     R.ortho.right = view.W; R.ortho.top = view.H; R.ortho.updateProjectionMatrix();
+    R.occluder.mesh.scale.set(view.W, view.H, 1); R.occluder.mesh.position.set(view.W / 2, view.H / 2, 0);
   }
   for (const id of ["shade", "hud"]) { const c = $(id); c.width = view.W; c.height = view.H; }
 }

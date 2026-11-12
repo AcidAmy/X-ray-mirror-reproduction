@@ -17,6 +17,18 @@ export const TUNE = {
   // hand joints, stage pixels
   handPoint: { minCutoff: 2.5, beta: 0.06, dCutoff: 1 },
 
+  // eye direction, radians
+  gaze:      { minCutoff: 2.5, beta: 8, dCutoff: 1 },
+  // pixels-per-metre scale of a hand (changes slowly)
+  handScale: { minCutoff: 1.0, beta: 0.02, dCutoff: 1 },
+
+  // Eyes: how far the eyeballs turn when the tracker reports a full look to the side / up or down (radians).
+  // If the eyes turn the wrong way sideways on a real face, set flipSides to true.
+  eyes: { maxYaw: 0.5, maxPitch: 0.38, flipSides: false },
+
+  // A hand in front of the face hides the anatomy behind it.
+  occludeHeadByHands: true,
+
   // Automatic head-shape fit
   autoFit: {
     maxTurn: 0.26,        // only sample when the face is within about 15 degrees of straight on (radians)
