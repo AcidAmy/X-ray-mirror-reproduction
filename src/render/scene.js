@@ -189,11 +189,17 @@ export function resize() {
   v.x0 = Math.max(0, -r.left); v.x1 = Math.min(view.W, vw - r.left);
   const dock = $("quick").getBoundingClientRect(), dockH = dock.height || 48;      // one row on a desktop, two on a phone
   document.documentElement.style.setProperty("--dock-h", Math.round(dockH + 14) + "px");
+  if (document.body.classList.contains("section-mobile")) {
+    const area=$("picture_window").getBoundingClientRect();
+    v.x0=Math.max(0,area.left-r.left)+6; v.x1=Math.min(view.W,area.right-r.left)-6;
+    v.y0=Math.max(0,area.top-r.top)+6; v.y1=Math.min(view.H,area.bottom-r.top)-6;
+  } else {
   v.y0 = Math.max(0, -r.top) + 52; v.y1 = Math.min(view.H, vh - r.top) - (dockH + 28);
   // the three-view panel covers part of the picture: a column down the left on a wide screen, a strip across the top on a phone
   const tri = $("tri").getBoundingClientRect();
   if (tri.width && tri.width < vw * 0.6) v.x0 = Math.max(v.x0, tri.right - r.left + 6);
   else if (tri.width) v.y0 = Math.max(v.y0, tri.bottom - r.top + 6);
+  }
   if (v.y1 - v.y0 < 80) { v.y0 = Math.max(0, -r.top); v.y1 = Math.min(view.H, vh - r.top); }
   if (R.renderer) {
     R.renderer.setPixelRatio(quality.ratio);

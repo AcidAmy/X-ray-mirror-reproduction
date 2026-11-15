@@ -30,9 +30,11 @@ new ResizeObserver(resize).observe(stage);
 // (?still keeps the original 4:3 so its frame can be compared with the original page.)
 function fitDemoToWindow() {
   if (new URLSearchParams(location.search).has("still")) return;
-  const ar = Math.min(2.4, Math.max(0.45, window.innerWidth / window.innerHeight));
+  const rect = $("picture_window").getBoundingClientRect();
+  const ar = Math.min(2.4, Math.max(0.45, rect.width / Math.max(1,rect.height)));
   stage.style.setProperty("--ar", ar.toFixed(4));
 }
+new ResizeObserver(() => { if (mode === "demo") fitDemoToWindow(); resize(); }).observe($("picture_window"));
 window.addEventListener("resize", () => {
   if (mode === "demo") fitDemoToWindow();
   resize();                                                // the stage can keep its size while the window crops it differently

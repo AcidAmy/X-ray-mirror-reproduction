@@ -3,6 +3,7 @@
 const KEY = "xr_lang";
 const UI = {
   en: {
+    "mobile.all":"All", "mobile.fold":"Fold / expand", "mobile.more":"Controls / readouts",
     "voxel.read": "MRI voxel: {name}",
     "voxel.0": "unlabelled / outside coverage",
     "voxel.1": "CSF",
@@ -73,6 +74,7 @@ const UI = {
     "e.load": "Could not load the {stage}: {msg}", "stage.camera": "camera", "stage.engine": "3D engine", "stage.trackers": "trackers"
   },
   zh: {
+    "mobile.all":"三视图", "mobile.fold":"收起 / 展开", "mobile.more":"设置 / 读数",
     "voxel.read": "MRI 体素：{name}",
     "voxel.0": "未标注／覆盖范围外",
     "voxel.1": "脑脊液",

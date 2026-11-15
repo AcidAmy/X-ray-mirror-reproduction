@@ -14,6 +14,7 @@ import { t, lang, onLanguage } from "../i18n.js";
 import { labelText } from "../anatomy/terms.js";
 import { sliceMesh, insideSection, surroundedBy } from "../anatomy/section.js";
 
+import { initSectionLayout, syncSectionLayout } from "./section-layout.js";
 import { sampleVolume } from "../anatomy/volume.js";
 import { pinchStep } from "../anatomy/interaction.js";
 import { view } from "../state.js";
@@ -261,6 +262,7 @@ export function syncTri() {
   const panel = $("tri"), hide = !S.tri;
   $("q_tri").classList.toggle("on", S.tri);
   if (panel.hidden !== hide) { panel.hidden = hide; window.dispatchEvent(new Event("resize")); }   // the label area moves aside
+  syncSectionLayout();
   if (!ready()) return;
   placeMarker(); drawAll();
 }
@@ -268,6 +270,7 @@ export function syncTri() {
 // pick(key): the visitor asked about a structure (clicked the "nearest label" line or chose one from the list).
 export function initTriview(pick) {
   onPick = pick;
+  initSectionLayout();
   $("tri_fixed").onchange=e=>{fixedOn=e.target.checked;resetFixedSection();if(fixedOn&&!getVolume())requestMRI();placeMarker();};
   $("tri_reanchor").onclick=resetFixedSection;
   $("tri_gesture").onchange=e=>{gestureOn=e.target.checked;pinch={active:false};};
@@ -315,7 +318,9 @@ export function initTriview(pick) {
   };
   $("tri_close").onclick = () => { $("q_tri").click(); };
   onLanguage(() => { updateMRIStatus(); if (ready()) { fillJump(); drawAll(); } });
-  new ResizeObserver(drawAll).observe($("tri"));
+  const sizeObserver=new ResizeObserver(drawAll);
+  sizeObserver.observe($("tri"));
+  VIEWS.forEach(v=>sizeObserver.observe($("tri_c_"+v.id)));
 }
 
 // Called after head pose update. Manual interaction stays available; two hands disable gesture control.

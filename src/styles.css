@@ -141,13 +141,6 @@ body:not(.running) #tri { display:none; }
 .triread .linkbtn { margin-top:0; font-size:13px; text-align:left; }
 .triread select { max-width:100%; width:100%; font-size:13px; }
 .triread .small { font-size:11px; }
-/* phones: the three planes side by side across the top, the read-out in a line under them */
-@media (max-width:700px) {
-  #tri { top:calc(88px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); width:min(calc(100vw - 16px), 78vh); grid-template-columns:repeat(3, 1fr); gap:6px; }
-  .triread { grid-column:1 / -1; flex-direction:row; flex-wrap:wrap; column-gap:12px; align-items:center; }
-  .triread select { width:auto; flex:1; min-width:120px; }
-  .triread .small { display:none; }
-}
 
 .triread label { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
 .triread label select { width:auto; flex:1; }
@@ -156,8 +149,71 @@ body:not(.running) #tri { display:none; }
 #mri_status { font-size:11px; color:var(--dim); }
 /* Keep the new MRI controls inside the existing panel footprint. */
 @media (min-width:701px) { .triread { max-height:calc(var(--tv) + 22px); overflow-y:auto; } }
-@media (max-width:700px) { #tri { max-height:calc(100dvh - 220px); overflow-y:auto; } }
+
 
 .triread details { width:100%; font-size:11px; }
 .triread details p { color:var(--dim); line-height:1.5; }
 #tri_voxel { font-weight:600; color:#ffc2d6; }
+
+/* Separate picture and sections on phones. Desktop keeps the existing overlay. */
+#picture_window { position:absolute; inset:0; overflow:hidden; }
+.section-body { display:contents; }
+.section-nav, #tri_more { display:none; }
+@media (max-width:700px) {
+  body.section-mobile #picture_window {
+    top:var(--section-top,88px);
+    bottom:calc(var(--section-bottom,120px) + var(--section-height,240px) + 6px);
+  }
+  body.section-mobile .stage {
+    width:min(100%, calc(var(--picture-height,300px) * var(--ar,1.3333)));
+  }
+  body.section-mobile #tri {
+    top:auto; bottom:var(--section-bottom,120px); left:8px; right:8px; transform:none;
+    width:auto; height:clamp(180px,32dvh,280px); max-height:none;
+    display:flex; flex-direction:column; padding:8px; gap:6px; background:#0b101b;
+  }
+  body.section-mobile #tri.section-collapsed { height:50px; }
+  .section-nav { display:flex; gap:3px; flex:none; }
+  .section-nav button { flex:1; min-width:0; min-height:34px; padding:4px 3px; font:inherit; font-size:11px;
+    color:var(--fg); background:transparent; border:1px solid var(--line); border-radius:7px; cursor:pointer; }
+  .section-nav button[aria-pressed=true] { background:var(--accent);color:#06121c; }
+  .section-nav #tri_fold { flex:1.5; }
+  .section-body { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; min-height:0; flex:1; }
+  .triviews { display:flex; justify-content:center; min-width:0; min-height:0; }
+  .triview { display:none; width:100%; max-width:calc(clamp(180px,32dvh,280px) - 84px); }
+  #tri[data-view=axial] [data-plane=axial], #tri[data-view=coronal] [data-plane=coronal],
+  #tri[data-view=sagittal] [data-plane=sagittal] { display:block; }
+  .triview input[type=range] { height:24px; margin:0; }
+  .triread { min-height:0; overflow-y:auto; max-height:none; font-size:11px; gap:5px; }
+  .triread > *, .triread > label { display:none; }
+  .triread #tri_more, .triread #tri_pos, .triread #tri_tissue, .triread #tri_voxel,
+  .triread #tri_near { display:block; flex:none; }
+  .triread #tri_more { margin:0; min-height:32px; padding:4px 8px; border:1px solid var(--line);border-radius:7px; }
+  #tri.section-more .triviews { display:none; }
+  #tri.section-more .section-body { display:flex; }
+  #tri.section-more .triread { width:100%; }
+  #tri.section-more .triread > * { display:revert; }
+  #tri.section-more .triread > label { display:flex; }
+  #tri.section-more .triread > select { max-width:100%; }
+  #tri.section-more .triread #tri_more { position:sticky;top:0;background:#0b101b;z-index:1; }
+  #tri[data-view=all]:not(.section-more) .section-body { display:flex;flex-direction:column;gap:4px; }
+  #tri[data-view=all]:not(.section-more) .triviews { display:flex;gap:6px; }
+  #tri[data-view=all] .triview { display:block;max-width:calc(clamp(180px,32dvh,280px) - 116px); }
+  #tri[data-view=all]:not(.section-more) .triread { flex:none; flex-direction:row;align-items:center;max-height:36px; }
+  #tri[data-view=all]:not(.section-more) .triread > *:not(#tri_more):not(#tri_voxel) { display:none; }
+  #tri[data-view=all]:not(.section-more) #tri_voxel { flex:1;min-width:0;overflow-wrap:anywhere; }
+  #tri.section-collapsed .section-body { display:none; }
+  body.section-mobile #info { bottom:calc(var(--section-bottom,120px) + 8px);max-height:calc(var(--section-height,240px) - 16px);overflow-y:auto;pointer-events:auto; }
+  body.section-mobile #tip { bottom:calc(var(--section-bottom,120px) + var(--section-height,240px) + 8px); }
+}
+/* Small phones need a compact header and two predictable rows of controls. */
+@media (max-width:360px), (max-width:700px) and (max-height:650px) {
+  body.section-mobile .topbar { display:grid;grid-template-columns:1fr auto;gap:6px;padding:calc(8px + env(safe-area-inset-top)) 10px 8px; }
+  body.section-mobile .topbar .brand { font-size:14px; }
+  body.section-mobile .topbar .pill { grid-row:2;grid-column:1 / -1;justify-self:start;padding:4px 8px; }
+  body.section-mobile #status { font-size:11px; }
+  body.section-mobile #tocamera { grid-row:1;grid-column:2;font-size:11px; }
+  body.section-mobile .quick { display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:calc(100vw - 16px);gap:4px; }
+  body.section-mobile .quick i { display:none; }
+  body.section-mobile .quick button { padding:8px 2px;min-height:38px;font-size:11px; }
+}

@@ -18,12 +18,15 @@
 <!-- The picture fills the whole window. #stage keeps the camera's own shape and is scaled to cover the window,
      so tracker coordinates still map straight onto it; whatever sticks out past the window is simply cropped. -->
 <div class="viewport" id="viewport">
+  <div id="picture_window">
   <div class="stage" id="stage">
     <video id="video" playsinline muted autoplay></video>
     <canvas id="frame"></canvas>
     <canvas id="shade"></canvas>
     <canvas id="gl"></canvas>
     <canvas id="hud"></canvas>
+  </div>
+
   </div>
 
   <div id="intro">
@@ -44,12 +47,21 @@
 
   <!-- three-view locator: sections of the head model through one point, tied to the 3D head by a crosshair -->
   <aside id="tri" hidden>
+    <nav class="section-nav" aria-label="Section views">
+      <button type="button" data-section-view="axial" data-i18n="tri.axial">Axial</button>
+      <button type="button" data-section-view="coronal" data-i18n="tri.coronal">Coronal</button>
+      <button type="button" data-section-view="sagittal" data-i18n="tri.sagittal">Sagittal</button>
+      <button type="button" data-section-view="all" data-i18n="mobile.all">Three views</button>
+      <button type="button" id="tri_fold" data-i18n="mobile.fold">Fold / expand</button>
+    </nav>
+    <div class="section-body">
     <div class="triviews">
-      <div class="triview" style="--c:#ff9a62"><b data-i18n="tri.axial">Axial</b><canvas id="tri_c_axial"></canvas><input id="tri_s_axial" type="range" step="0.1" data-i18n-title="tri.slice"></div>
-      <div class="triview" style="--c:#7fe08a"><b data-i18n="tri.coronal">Coronal</b><canvas id="tri_c_coronal"></canvas><input id="tri_s_coronal" type="range" step="0.1" data-i18n-title="tri.slice"></div>
-      <div class="triview" style="--c:#7fd1ff"><b data-i18n="tri.sagittal">Sagittal</b><canvas id="tri_c_sagittal"></canvas><input id="tri_s_sagittal" type="range" step="0.1" data-i18n-title="tri.slice"></div>
+      <div class="triview" data-plane="axial" style="--c:#ff9a62"><b data-i18n="tri.axial">Axial</b><canvas id="tri_c_axial"></canvas><input id="tri_s_axial" type="range" step="0.1" data-i18n-title="tri.slice"></div>
+      <div class="triview" data-plane="coronal" style="--c:#7fe08a"><b data-i18n="tri.coronal">Coronal</b><canvas id="tri_c_coronal"></canvas><input id="tri_s_coronal" type="range" step="0.1" data-i18n-title="tri.slice"></div>
+      <div class="triview" data-plane="sagittal" style="--c:#7fd1ff"><b data-i18n="tri.sagittal">Sagittal</b><canvas id="tri_c_sagittal"></canvas><input id="tri_s_sagittal" type="range" step="0.1" data-i18n-title="tri.slice"></div>
     </div>
     <div class="triread">
+      <button type="button" id="tri_more" class="linkbtn" data-i18n="mobile.more">Controls / readouts</button>
       <label><span data-i18n="mri.mode">Background</span> <select id="tri_mode"><option value="model" data-i18n="mri.model">Model</option><option value="mri" data-i18n="mri.image">MRI</option><option value="blend" data-i18n="mri.blend">MRI + outlines</option></select></label>
       <label><input id="tri_texture" type="checkbox"> <span data-i18n="mri.texture">MRI on 3D planes</span></label>
       <label><span data-i18n="mri.contrast">Contrast</span> <input id="tri_contrast" type="range" min="0.5" max="2" step="0.1" value="1"></label>
@@ -71,6 +83,7 @@
       <select id="tri_jump"></select>
       <p class="small" data-i18n="tri.note"></p>
       <button class="linkbtn" id="tri_close" type="button" data-i18n="drawer.close">Close</button>
+    </div>
     </div>
   </aside>
 
