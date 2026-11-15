@@ -62,15 +62,21 @@
     </div>
     <div class="triread">
       <button type="button" id="tri_more" class="linkbtn" data-i18n="mobile.more">Controls / readouts</button>
-      <label><span data-i18n="mri.mode">Background</span> <select id="tri_mode"><option value="model" data-i18n="mri.model">Model</option><option value="mri" data-i18n="mri.image">MRI</option><option value="blend" data-i18n="mri.blend">MRI + outlines</option></select></label>
-      <label><input id="tri_texture" type="checkbox"> <span data-i18n="mri.texture">MRI on 3D planes</span></label>
-      <label><span data-i18n="mri.contrast">Contrast</span> <input id="tri_contrast" type="range" min="0.5" max="2" step="0.1" value="1"></label>
-      <span id="mri_status" role="status" aria-live="polite"></span>
-      <button id="mri_retry" class="linkbtn" hidden data-i18n="mri.retry">Retry MRI</button>
-      <span class="mri-credit" data-i18n="mri.note"></span>
+      <label><span data-i18n="mri.mode">Background</span> <select id="tri_mode"><option value="model" data-i18n="mri.model">Model</option><option value="mri" data-i18n="mri.image">MRI</option><option value="blend" data-i18n="mri.blend">MRI + outlines</option><option value="ct" data-i18n="ct.image">CT</option><option value="ct-blend" data-i18n="ct.blend">CT + outlines</option></select></label>
+      <label><input id="tri_texture" type="checkbox"> <span data-i18n="mri.texture">Selected scan on 3D planes</span></label>
       <span id="tri_pos"></span>
       <span id="tri_tissue"></span>
       <span id="tri_voxel"></span>
+      <label id="mri_contrast_control"><span data-i18n="mri.contrast">Contrast</span> <input id="tri_contrast" type="range" min="0.5" max="2" step="0.1" value="1"></label>
+      <div id="ct_controls" hidden>
+        <label><span data-i18n="ct.window">CT window</span><select id="ct_preset"><option value="bone" data-i18n="ct.bone">Bone</option><option value="brain" data-i18n="ct.brain">Brain</option><option value="soft" data-i18n="ct.soft">Soft tissue</option><option value="custom" data-i18n="ct.custom">Custom</option></select></label>
+        <label><span data-i18n="ct.width">Width</span><input id="ct_width" type="range" min="1" max="4000" step="1" value="2000"></label>
+        <label><span data-i18n="ct.center">Level</span><input id="ct_center" type="range" min="-1000" max="2000" step="1" value="500"></label>
+        <output id="ct_window_value"></output>
+      </div>
+      <span id="mri_status" role="status" aria-live="polite"></span>
+      <button id="mri_retry" class="linkbtn" hidden data-i18n="mri.retry">Retry MRI</button>
+      <span id="volume_credit" class="mri-credit"></span>
       <details><summary data-i18n="play.title">Exhibit interaction</summary>
         <label><input type="checkbox" id="tri_fixed"><span data-i18n="play.fixed">Fixed screen plane</span></label>
         <button type="button" class="linkbtn" id="tri_reanchor" data-i18n="play.anchor">Re-anchor</button>
@@ -187,6 +193,7 @@
       <p class="small" data-i18n="about.model"></p>
       <p class="small" style="margin-top:8px" data-i18n="about.privacy"></p>
       <p class="small" style="margin-top:8px" data-i18n="about.credit"></p>
+      <p class="small"><a href="https://github.com/google-deepmind/tcia-ct-scan-dataset" target="_blank" rel="noopener noreferrer">CT: Nikolov et al. / DeepMind / TCIA</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a></p>
       <p class="small" style="margin-top:8px">MRI: Copyright (C) 1993–2004 Louis Collins, McConnell Brain Imaging Centre, Montreal Neurological Institute, McGill University. <a href="https://nist.mni.mcgill.ca/icbm-152-nonlinear-atlases-2009/" target="_blank" rel="noopener">ICBM152 · source &amp; license</a></p>
     </div>
   </aside>

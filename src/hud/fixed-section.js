@@ -1,8 +1,8 @@
 // A camera-aligned plane frozen in scene coordinates. Resample the moving atlas through its inverse pose.
 import * as THREE from 'three';
 import { R } from '../render/scene.js';
-import { getVolume } from './mri.js';
-import { sampleVolume } from '../anatomy/volume.js';
+import { getVolume } from './volume-source.js';
+import { sampleVolume, displayValue } from '../anatomy/volume.js';
 let sheet=null, last=-Infinity;
 const frozenProjection=new THREE.Matrix4();
 const local=new THREE.Vector3(), world=new THREE.Vector3(), inv=new THREE.Matrix4();
@@ -36,7 +36,7 @@ export function updateFixedSection(now,enabled,found,contrast){
     world.set(((x+.5)/128-.5)*29.2,(.5-(y+.5)/128)*29.2,0).applyMatrix4(sheet.matrixWorld);
     local.copy(world).applyMatrix4(inv);
     const raw=sampleVolume(v,[local.x,local.y,local.z]);
-    const c=raw>0?Math.max(0,Math.min(255,(raw-128)*contrast+128)):0,i=(x+y*128)*4;
+    const c=v.modality==='CT'?displayValue(v,raw,contrast):(raw>0?displayValue(v,raw,contrast):0),i=(x+y*128)*4;
     data.data[i]=data.data[i+1]=data.data[i+2]=c;data.data[i+3]=255;
   }
   ctx.putImageData(data,0,0);sheet.material.map.needsUpdate=true;

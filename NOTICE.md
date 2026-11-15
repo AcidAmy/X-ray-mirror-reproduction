@@ -58,3 +58,14 @@ References requested by the atlas authors:
 - Fonov et al. (2009), Unbiased nonlinear average age-appropriate brain templates from birth to adulthood. DOI: 10.1016/S1053-8119(09)70884-5.
 
 Changes made here: approximate affine alignment to BodyParts3D brain bounds; resampling onto a 2 mm model-coordinate grid; T1 windowing to uint8; probability argmax labels inside the brain mask. Source archive hash and transforms are retained in public/volume/meta.json. This is a population-average atlas, not a patient's scan. No clinical or local anatomical registration accuracy is claimed. The supplied probability maps are not manually delineated labels of an individual.
+
+## CT teaching sample (stage 6d)
+
+- Distributor: Google DeepMind, TCIA Test & Validation Radiotherapy CT Planning Scan Dataset, https://github.com/google-deepmind/tcia-ct-scan-dataset .
+- Pinned revision: `2edb50947e50ef26e60b72dec89d36d71efe5549`; sample `0522c0017`, `nrrds/test/oncologist/0522c0017/CT_IMAGE.nrrd` and `segmentations/Brain.nrrd`.
+- Licence of this public redistribution: Creative Commons Attribution 4.0 International, https://creativecommons.org/licenses/by/4.0/ . The distributor's full licence is retained in `public/ct/SOURCE-LICENSE.txt`.
+- Attribution: Stanislav Nikolov et al., *Deep learning to achieve clinically applicable segmentation of head and neck anatomy for radiotherapy* (2018), https://arxiv.org/abs/1809.04430 . Original scan collection: Bosch, Straube, Matthews and Purdy, *Head-Neck Cetuximab*, TCIA (2015), https://doi.org/10.7937/K9/TCIA.2015.7AKGJUPZ .
+- Source used here is the independently published DeepMind release, not TCIA's current restricted download service. This project does not grant access to other TCIA scans or imply their current terms are the same.
+- Changes: brain-mask bounding-box affine alignment to the BodyParts3D brain/hindbrain; 2 mm model-coordinate resampling; integer HU rounding; head-bound cropping; an independent scan-coverage mask. No segmentation categories are displayed for CT. The brain mask is used only for coarse alignment.
+- Files: `public/ct/head.bin`, `meta.json`, `source.json`, and the embedded CT payloads in generated single-file HTML. Source hashes, orientation, transforms, intensity provenance and dimensions are retained in metadata. Reproduction: `python3 scripts/prepare-ct.py CT_IMAGE.nrrd Brain.nrrd` (numpy and scipy).
+- This is a radiotherapy patient sample, not a healthy reference atlas, not the visitor's scan, and not paired with the ICBM152 MRI. Published NRRD physical intensities are retained; original per-slice DICOM calibration metadata is not included in this redistribution. The HU display is an interpolated, resampled teaching value, not a diagnostic measurement. No local registration accuracy or CT tissue recognition is claimed.

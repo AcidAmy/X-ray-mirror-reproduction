@@ -29,6 +29,9 @@ const blocks = [
 blocks.push(
   '<script type="application/json" id="embed-volume-meta">' + read("volume/meta.json", "utf8").replace(/</g, "\\u003c") + "</script>",
   '<script type="application/octet-stream" id="embed-volume">' + b64("volume/icbm152.bin") + "</script>");
+blocks.push(
+  '<script type="application/json" id="embed-ct-meta">' + read("ct/meta.json", "utf8").replace(/</g, "\\u003c") + "</script>",
+  '<script type="application/octet-stream" id="embed-ct">' + b64("ct/head.bin") + "</script>");
 if (offline) blocks.push(
   '<script type="application/octet-stream" id="embed-wasm-js">' + b64("wasm/vision_wasm_internal.js") + "</script>",
   '<script type="application/octet-stream" id="embed-wasm-bin">' + b64("wasm/vision_wasm_internal.wasm") + "</script>",

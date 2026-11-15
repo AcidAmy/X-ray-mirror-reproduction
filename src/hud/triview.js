@@ -15,23 +15,38 @@ import { labelText } from "../anatomy/terms.js";
 import { sliceMesh, insideSection, surroundedBy } from "../anatomy/section.js";
 
 import { initSectionLayout, syncSectionLayout } from "./section-layout.js";
-import { sampleVolume } from "../anatomy/volume.js";
+import { sampleVolume, CT_WINDOWS } from "../anatomy/volume.js";
 import { pinchStep } from "../anatomy/interaction.js";
 import { view } from "../state.js";
 import { updateFixedSection, resetFixedSection } from "./fixed-section.js";
-import { loadMRI, getVolume, mriSlice } from "./mri.js";
+import { loadVolume, getVolume, getVolumeKind, setVolumeKind, imageSlice, sliceKey } from "./volume-source.js";
 let fixedOn=false, gestureOn=false, gestureAxis=1, pinch={active:false}, lastInteraction=-Infinity;
-let imageMode = "model", textureOn = false, contrast = 1, mriStatus = "", loadingMRI = false;
-async function requestMRI() {
-  if (loadingMRI) return;
-  loadingMRI = true; mriStatus = "mri.loading"; updateMRIStatus();
-  try { await loadMRI(); mriStatus = "mri.ready"; }
-  catch { mriStatus = "mri.error"; }
-  finally { loadingMRI = false; updateMRIStatus(); drawAll(); }
+let imageMode = "model", textureOn = false, contrast = 1;
+let ctWindow={...CT_WINDOWS.bone};
+const loadStates=new Map();
+const displayOptions=()=>getVolumeKind()==='ct'?ctWindow:contrast;
+async function requestVolume() {
+  const kind=getVolumeKind();
+  if(loadStates.get(kind)==='loading')return;
+  loadStates.set(kind,'loading');updateVolumeStatus();
+  try { await loadVolume(kind);loadStates.set(kind,'ready'); }
+  catch { loadStates.set(kind,'error'); }
+  finally { updateVolumeStatus();drawAll(); }
 }
-function updateMRIStatus() {
-  $("mri_status").textContent = mriStatus ? t(mriStatus) : "";
-  $("mri_retry").hidden = mriStatus !== "mri.error";
+function updateVolumeStatus() {
+  const kind=getVolumeKind(), state=loadStates.get(kind);
+  $("mri_status").textContent=state?t(kind+'.'+state):'';
+  $("mri_retry").hidden=state!=='error';
+  $("volume_credit").textContent=t(kind+'.note');
+  $("ct_controls").hidden=kind!=='ct';
+  $("mri_contrast_control").hidden=kind==='ct';
+  $("ct_window_value").textContent=`${t('ct.width')} ${ctWindow.width} · ${t('ct.center')} ${ctWindow.center}`;
+}
+function changeImageMode(value){
+  imageMode=value;setVolumeKind(value.startsWith('ct')?'ct':'mri');
+  resetFixedSection();updateVolumeStatus();
+  if((imageMode!=='model'||textureOn||fixedOn)&&!getVolume())requestVolume();
+  drawAll();
 }
 const AX = { x: 0, y: 1, z: 2 };
 // plane: the coordinate each view holds fixed. u, v: the coordinates across and up the picture; su = -1 flips across.
@@ -126,7 +141,7 @@ function drawView(vi) {
   const g = cv.getContext("2d"), k = css / (HALF * 2);                // CSS pixels per cm
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.fillStyle = "#04060b"; g.fillRect(0, 0, css, css);
-  const image = imageMode !== "model" && getVolume() ? mriSlice(v,cur,CENTRE,HALF,contrast) : null;
+  const image = imageMode !== "model" && getVolume() ? imageSlice(v,cur,CENTRE,HALF,displayOptions()) : null;
   if (image) g.drawImage(image,0,0,css,css);
   // model coordinates straight onto the picture
   g.save();
@@ -134,12 +149,12 @@ function drawView(vi) {
   g.lineWidth = 0.8 / k; g.lineJoin = "round";
   for (const { part, path } of sectionFor(vi)) {
     if (!image) { g.fillStyle = part.fill; g.fill(path); }                  // winding rule, as insideSection
-    if (!image || imageMode === "blend") { g.strokeStyle = part.line; g.stroke(path); }
+    if (!image || (imageMode === "blend" || imageMode === "ct-blend")) { g.strokeStyle = part.line; g.stroke(path); }
   }
   g.restore();
   const X = p => css / 2 + (p - CENTRE[v.u]) * k * v.su, Y = p => css / 2 - (p - CENTRE[v.v]) * k;
   // label anchors lying close to this plane
-  for (const L of R.META.labels) for (const p of L.pts) {
+  for (const L of (image && !imageMode.includes("blend") ? [] : R.META.labels)) for (const p of L.pts) {
     if (Math.abs(p[v.plane] - cur[v.plane]) > NEAR_PLANE) continue;
     g.fillStyle = DOT_COLOR[L.layer] || "#fff"; g.strokeStyle = "rgba(4,7,13,.9)"; g.lineWidth = 1;
     g.beginPath(); g.arc(X(p[v.u]), Y(p[v.v]), 2.4, 0, 6.3); g.fill(); g.stroke();
@@ -162,7 +177,10 @@ const signed = (v, pos, neg) => t("dir." + (v >= 0 ? pos : neg)) + " " + Math.ab
 function drawAll() {
   if (!ready() || $("tri").hidden) return;
   const volume=getVolume();
-  $("tri_voxel").textContent=volume ? t("voxel.read",{name:t("voxel."+sampleVolume(volume,cur,true))}) : t("voxel.pending");
+  if(getVolumeKind()==='ct'){
+    const hu=volume?sampleVolume(volume,cur):NaN;
+    $("tri_voxel").textContent=!volume?t('ct.pending'):Number.isFinite(hu)?t('ct.read',{value:Math.round(hu)}):t('ct.outside');
+  } else $("tri_voxel").textContent=volume ? t("voxel.read",{name:t("voxel."+sampleVolume(volume,cur,true))}) : t("voxel.pending");
   let part = tissueAt();
   nearest = nearestLabel(part);
   // The label anchors sit on the surface of their structure, where "inside or outside" is a coin toss.
@@ -227,8 +245,8 @@ function updateTextures() {
   marker.images.forEach((mesh,i) => {
     mesh.visible = textureOn && !!getVolume();
     if (!mesh.visible) return;
-    const v=VIEWS[i], canvas=mriSlice(v,cur,CENTRE,HALF,contrast);
-    const key=[cur[v.plane],contrast].join(':');
+    const v=VIEWS[i], canvas=imageSlice(v,cur,CENTRE,HALF,displayOptions());
+    const key=sliceKey(v,cur,displayOptions());
     if (!mesh.material.map) { mesh.material.map=new THREE.CanvasTexture(canvas); mesh.material.map.colorSpace=THREE.SRGBColorSpace; mesh.material.alphaMap=mesh.material.map; mesh.material.alphaTest=.02; mesh.material.needsUpdate=true; }
     if (mesh.userData.key !== key) { mesh.material.map.needsUpdate=true; mesh.userData.key=key; }
     mesh.position.setComponent(v.plane,cur[v.plane]);
@@ -271,14 +289,24 @@ export function syncTri() {
 export function initTriview(pick) {
   onPick = pick;
   initSectionLayout();
-  $("tri_fixed").onchange=e=>{fixedOn=e.target.checked;resetFixedSection();if(fixedOn&&!getVolume())requestMRI();placeMarker();};
+  $("tri_fixed").onchange=e=>{fixedOn=e.target.checked;resetFixedSection();if(fixedOn&&!getVolume())requestVolume();placeMarker();};
   $("tri_reanchor").onclick=resetFixedSection;
   $("tri_gesture").onchange=e=>{gestureOn=e.target.checked;pinch={active:false};};
   $("tri_axis").onchange=e=>{gestureAxis=Number(e.target.value);pinch={active:false};};
-  $("tri_mode").onchange = e => { imageMode=e.target.value; if (imageMode!=="model" && !getVolume()) requestMRI(); drawAll(); };
-  $("tri_texture").onchange = e => { textureOn=e.target.checked; if (textureOn && !getVolume()) requestMRI(); drawAll(); };
+  $("tri_mode").onchange=e=>changeImageMode(e.target.value);
+  $("ct_preset").onchange=e=>{
+    if(!CT_WINDOWS[e.target.value])return;
+    ctWindow={...CT_WINDOWS[e.target.value]};
+    $("ct_width").value=ctWindow.width;$("ct_center").value=ctWindow.center;
+    updateVolumeStatus();drawAll();
+  };
+  for(const [id,key] of [['ct_width','width'],['ct_center','center']])$(id).oninput=e=>{
+    ctWindow={...ctWindow,[key]:Number(e.target.value)};$("ct_preset").value='custom';updateVolumeStatus();drawAll();
+  };
+  updateVolumeStatus();
+  $("tri_texture").onchange = e => { textureOn=e.target.checked; if (textureOn && !getVolume()) requestVolume(); drawAll(); };
   $("tri_contrast").oninput = e => { contrast=Number(e.target.value); drawAll(); };
-  $("mri_retry").onclick = requestMRI;
+  $("mri_retry").onclick = requestVolume;
   VIEWS.forEach((v, vi) => {
     const cv = $("tri_c_" + v.id);
     let down = null;
@@ -293,7 +321,7 @@ export function initTriview(pick) {
     cv.addEventListener("pointerup", e => {
       if (!down) return;
       const still = Math.hypot(e.clientX - down.x, e.clientY - down.y) < 4; down = null;
-      if (!still || !ready()) return;
+      if (!still || !ready() || (getVolume() && imageMode!=="model" && !imageMode.includes("blend"))) return;
       // a tap on (or right beside) a label dot lands exactly on that label
       const a = at(e); let best = null;
       for (const L of R.META.labels) for (const p of L.pts) {
@@ -317,7 +345,7 @@ export function initTriview(pick) {
     e.target.value = "";
   };
   $("tri_close").onclick = () => { $("q_tri").click(); };
-  onLanguage(() => { updateMRIStatus(); if (ready()) { fillJump(); drawAll(); } });
+  onLanguage(() => { updateVolumeStatus(); if (ready()) { fillJump(); drawAll(); } });
   const sizeObserver=new ResizeObserver(drawAll);
   sizeObserver.observe($("tri"));
   VIEWS.forEach(v=>sizeObserver.observe($("tri_c_"+v.id)));
@@ -326,7 +354,7 @@ export function initTriview(pick) {
 // Called after head pose update. Manual interaction stays available; two hands disable gesture control.
 export const wantsSectionHands=()=>S.tri && gestureOn && !fixedOn;
 export function updateSectionInteraction(now,hands,found){
-  updateFixedSection(now,S.tri&&fixedOn,found,contrast);
+  updateFixedSection(now,S.tri&&fixedOn,found,displayOptions());
   if(!S.tri || !ready() || !gestureOn || fixedOn || !found){pinch={active:false};$("tri_gesture_status").textContent="";return;}
   pinch=pinchStep(pinch,hands,cur[gestureAxis],[box[0][gestureAxis],box[1][gestureAxis]],view.W/view.H);
   $("tri_gesture_status").textContent=t(pinch.active?"play.dragging":"play.waiting");
