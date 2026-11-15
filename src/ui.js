@@ -2,10 +2,11 @@
 // and exhibit (kiosk) behaviour: open the page with ?kiosk to start the camera by itself, hide the settings
 // from visitors, and put everything back to defaults once nobody has been there for a while.
 import { $ } from "./state.js";
-import { S, resetAll } from "./settings.js";
+import { S, save, resetAll } from "./settings.js";
 import { t, lang, setLanguage, onLanguage } from "./i18n.js";
 import { pickLabel } from "./hud/labels.js";
 import { labelInfo } from "./anatomy/terms.js";
+import { initTriview, syncTri, setCursor } from "./hud/triview.js";
 
 export const KIOSK = new URLSearchParams(location.search).has("kiosk");
 const HINT_AFTER_MS = 2500;        // nobody in view for this long -> show the hint
@@ -29,6 +30,7 @@ function refresh() {
   $("q_settings").classList.toggle("on", !$("drawer").hidden);
   $("q_settings").setAttribute("aria-expanded", String(!$("drawer").hidden));
   $("q_full").textContent = t(document.fullscreenElement ? "q.exitfull" : "q.full");
+  syncTri();
 }
 
 export function setDrawer(open) { $("drawer").hidden = !open; refresh(); }
@@ -38,6 +40,8 @@ export function initUI() {
   $("q_style").onclick = () => { for (const b of $("style").children) if (b.dataset.style !== S.style) { b.click(); break; } };
   $("q_labels").onclick = () => $("labels").click();
   $("labels").addEventListener("change", e => { if (e.target.checked && !tipLearned) showTip(); else hideTip(); });
+  $("q_tri").onclick = () => { S.tri = !S.tri; save(); };
+  initTriview(showInfo);
   $("q_settings").onclick = () => setDrawer($("drawer").hidden);
   $("drawerclose").onclick = () => setDrawer(false);
   const canFull = !!document.documentElement.requestFullscreen;
@@ -51,9 +55,10 @@ export function initUI() {
   onLanguage(() => { refresh(); hideInfo(); });
   // tap a label on the picture to read a one-sentence explanation
   $("stage").addEventListener("click", e => {
-    const r = $("stage").getBoundingClientRect(), key = S.labels ? pickLabel(e.clientX - r.left, e.clientY - r.top) : null;
-    if (key) {
-      showInfo(key); hideTip();
+    const r = $("stage").getBoundingClientRect(), hit = S.labels ? pickLabel(e.clientX - r.left, e.clientY - r.top) : null;
+    if (hit) {
+      showInfo(hit.key); hideTip();
+      if (S.tri && hit.p) setCursor(hit.p);                 // the three views jump to the structure that was tapped
       tipLearned = true; if (!KIOSK) try { localStorage.setItem(TIP_KEY, "1"); } catch (err) {}
     } else hideInfo();
   });

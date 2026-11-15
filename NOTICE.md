@@ -41,3 +41,20 @@
 ## English summary
 
 Anatomy models: BodyParts3D, © The Database Center for Life Science, licensed under CC Attribution-Share Alike 2.1 Japan; simplified and re-aligned. Keep this credit, and share modified model data under the same licence. Software: three.js (MIT), MediaPipe Tasks Vision and its models (Apache 2.0). Video is processed in the visitor's browser only and is never uploaded, recorded or stored. This is an educational exhibit, not a medical device.
+
+
+## ICBM152 MRI atlas (stage 6b)
+
+Source: McGill University, ICBM152 nonlinear 2009c symmetric T1 and CSF/GM/WM tissue probabilities.
+https://nist.mni.mcgill.ca/icbm-152-nonlinear-atlases-2009/
+
+Copyright (C) 1993–2004 Louis Collins, McConnell Brain Imaging Centre, Montreal Neurological Institute, McGill University.
+Permission to use, copy, modify, and distribute this software and its documentation for any purpose and without fee is hereby granted, provided that the above copyright notice appear in all copies.
+The authors and McGill University make no representations about the suitability of this software for any purpose. It is provided “as is” without express or implied warranty.
+The authors are not responsible for any data loss, equipment damage, property loss, or injury to subjects or patients resulting from the use or misuse of this software package.
+
+References requested by the atlas authors:
+- Fonov et al. (2011), Unbiased average age-appropriate atlases for pediatric studies. DOI: 10.1016/j.neuroimage.2010.07.033.
+- Fonov et al. (2009), Unbiased nonlinear average age-appropriate brain templates from birth to adulthood. DOI: 10.1016/S1053-8119(09)70884-5.
+
+Changes made here: approximate affine alignment to BodyParts3D brain bounds; resampling onto a 2 mm model-coordinate grid; T1 windowing to uint8; probability argmax labels inside the brain mask. Source archive hash and transforms are retained in public/volume/meta.json. This is a population-average atlas, not a patient's scan. No clinical or local anatomical registration accuracy is claimed. The supplied probability maps are not manually delineated labels of an individual.

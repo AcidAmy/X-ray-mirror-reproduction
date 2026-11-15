@@ -120,3 +120,40 @@ body.kiosk #q_settings, body.kiosk #tocamera { display:none; }
 @keyframes tipin { from { opacity:0; transform:translate(-50%, 8px); } }
 @keyframes tipnudge { 50% { transform:translate(-50%, -5px); } }
 @media (prefers-reduced-motion: reduce) { #tip { animation:none; } }
+
+/* ---------- three-view locator ---------- */
+/* wide screens: a 2 x 2 block (axial, coronal / sagittal, read-out), the way imaging workstations lay out the planes */
+#tri { --tv:min(240px, 21vw, calc((100vh - 150px - var(--dock-h, 62px)) / 2));
+       position:absolute; left:12px; top:calc(58px + env(safe-area-inset-top)); z-index:4;
+       display:grid; grid-template-columns:repeat(2, var(--tv)); gap:8px; padding:8px; border-radius:14px;
+       background:rgba(9,12,19,.88); border:1px solid var(--line); backdrop-filter:blur(10px); }
+body:not(.running) #tri { display:none; }
+.triviews { display:contents; }
+.triview { position:relative; min-width:0; }
+.triview canvas { display:block; width:100%; aspect-ratio:1; border-radius:8px; border:1.5px solid var(--c); background:#04060b;
+                  touch-action:none; cursor:crosshair; }
+.triview b { position:absolute; left:7px; top:5px; font-size:11px; font-weight:700; color:var(--c); pointer-events:none;
+             text-shadow:0 0 4px #04060b, 0 0 4px #04060b; }
+.triview input[type=range] { display:block; width:100%; margin:4px 0 0; accent-color:var(--c); }
+.triread { display:flex; flex-direction:column; align-items:flex-start; gap:6px; font-size:13px; min-width:0; padding:2px 2px 0; overflow:hidden; }
+#tri_pos { font-variant-numeric:tabular-nums; color:var(--dim); }
+#tri_tissue { font-weight:600; }
+.triread .linkbtn { margin-top:0; font-size:13px; text-align:left; }
+.triread select { max-width:100%; width:100%; font-size:13px; }
+.triread .small { font-size:11px; }
+/* phones: the three planes side by side across the top, the read-out in a line under them */
+@media (max-width:700px) {
+  #tri { top:calc(88px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); width:min(calc(100vw - 16px), 78vh); grid-template-columns:repeat(3, 1fr); gap:6px; }
+  .triread { grid-column:1 / -1; flex-direction:row; flex-wrap:wrap; column-gap:12px; align-items:center; }
+  .triread select { width:auto; flex:1; min-width:120px; }
+  .triread .small { display:none; }
+}
+
+.triread label { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+.triread label select { width:auto; flex:1; }
+.triread label input[type=range] { width:100px; }
+.mri-credit { font-size:10px; color:var(--dim); line-height:1.4; }
+#mri_status { font-size:11px; color:var(--dim); }
+/* Keep the new MRI controls inside the existing panel footprint. */
+@media (min-width:701px) { .triread { max-height:calc(var(--tv) + 22px); overflow-y:auto; } }
+@media (max-width:700px) { #tri { max-height:calc(100dvh - 220px); overflow-y:auto; } }

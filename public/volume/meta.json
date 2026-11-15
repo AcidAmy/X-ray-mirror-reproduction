@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "name": "ICBM152 2009c symmetric T1 MRI",
+  "source": "https://nist.mni.mcgill.ca/icbm-152-nonlinear-atlases-2009/",
+  "download": "https://www.bic.mni.mcgill.ca/~vfonov/icbm/2009/mni_icbm152_nlin_sym_09c_nifti.zip",
+  "anatomyMetaSha256": "b624e084eeb0985c919b74c41b2c7265f0cd2fd309608d37ff4145d7d9fa6e43",
+  "sourceArchiveSha256": "ed981b4611ddd797a22f539035979723ecb1badebd06dcd85df149b5ef00890d",
+  "sourceFile": "mni_icbm152_nlin_sym_09c/mni_icbm152_t1_tal_nlin_sym_09c.nii",
+  "dimensions": [
+    108,
+    137,
+    122
+  ],
+  "origin": [
+    -11.0,
+    -12.600000000000001,
+    -16.2
+  ],
+  "spacing": [
+    0.2,
+    0.2,
+    0.2
+  ],
+  "layout": "uint8 intensity then uint8 tissue, x fastest",
+  "sha256": "be3685a8a70fb0258a12253577a2ad0d9d3af0b578cfab7c8bb283f5d69c5473",
+  "byteLength": 3610224,
+  "labels": {
+    "0": "unlabelled",
+    "1": "CSF",
+    "2": "grey matter",
+    "3": "white matter"
+  },
+  "sourceVoxelToRASmm": [
+    [
+      1.0,
+      0.0,
+      0.0,
+      -96.0
+    ],
+    [
+      0.0,
+      1.0,
+      0.0,
+      -132.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0,
+      -78.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "sourceVoxelToModelCm": [
+    [
+      -0.1012352777777778,
+      0.0,
+      0.0,
+      9.67868666666667
+    ],
+    [
+      0.0,
+      0.0,
+      0.11163279220779221,
+      -4.2724267532467515
+    ],
+    [
+      0.0,
+      0.10271211111111112,
+      0.0,
+      -17.41214277777778
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "modelCmToSourceVoxel": [
+    [
+      -9.87797951416804,
+      -0.0,
+      -0.0,
+      95.60586861738471
+    ],
+    [
+      0.0,
+      0.0,
+      9.735950212514158,
+      169.52375517763244
+    ],
+    [
+      0.0,
+      8.95794130221709,
+      0.0,
+      38.27214807360634
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "registration": {
+    "method": "axis-aligned brain bounding-box affine; approximate teaching alignment only",
+    "scale": [
+      1.0123527777777779,
+      1.116327922077922,
+      1.0271211111111112
+    ],
+    "translationCm": [
+      -0.03989999999999938,
+      4.434931038961041,
+      -3.854144111111111
+    ],
+    "sourceBrainBoundsCm": [
+      [
+        -7.199999999999999,
+        -7.200000000000001,
+        -10.700000000000001
+      ],
+      [
+        7.200000000000001,
+        8.2,
+        7.299999999999999
+      ]
+    ],
+    "targetBrainBoundsCm": [
+      [
+        -7.32884,
+        -3.60263,
+        -14.84434
+      ],
+      [
+        7.249040000000001,
+        13.58882,
+        3.643839999999999
+      ]
+    ]
+  },
+  "intensityWindow": [
+    0,
+    92.24888610839844
+  ],
+  "notes": "Population-average real MRI, not an individual scan. Probability argmax labels require >=0.25 within brain mask. No local registration accuracy claimed."
+}

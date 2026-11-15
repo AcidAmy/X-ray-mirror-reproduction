@@ -20,11 +20,12 @@ export const R = {
   occluder: null,     // { scene, mesh, texture }: erases the head where a hand is in front of it
   meshes: {},         // name -> { mesh, layer, fixedMode }
   handRigs: [],       // two hands, each: { group, palm, bones[], pts }
-  META: null
+  META: null,
+  geos: null          // the decoded meshes as loaded (head coordinates, mouth closed); the section views cut these
 };
 
 export function buildScene(META, geos) {
-  R.META = META;
+  R.META = META; R.geos = geos;
   const renderer = R.renderer = new THREE.WebGLRenderer({ canvas: $("gl"), alpha: true, antialias: true });
   renderer.setClearColor(0x000000, 0);
   renderer.autoClear = false;
@@ -189,6 +190,10 @@ export function resize() {
   const dock = $("quick").getBoundingClientRect(), dockH = dock.height || 48;      // one row on a desktop, two on a phone
   document.documentElement.style.setProperty("--dock-h", Math.round(dockH + 14) + "px");
   v.y0 = Math.max(0, -r.top) + 52; v.y1 = Math.min(view.H, vh - r.top) - (dockH + 28);
+  // the three-view panel covers part of the picture: a column down the left on a wide screen, a strip across the top on a phone
+  const tri = $("tri").getBoundingClientRect();
+  if (tri.width && tri.width < vw * 0.6) v.x0 = Math.max(v.x0, tri.right - r.left + 6);
+  else if (tri.width) v.y0 = Math.max(v.y0, tri.bottom - r.top + 6);
   if (v.y1 - v.y0 < 80) { v.y0 = Math.max(0, -r.top); v.y1 = Math.min(view.H, vh - r.top); }
   if (R.renderer) {
     R.renderer.setPixelRatio(quality.ratio);

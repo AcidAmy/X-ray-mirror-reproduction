@@ -16,6 +16,7 @@ const labelState = {};                            // text -> { side, y } so labe
 const lp = new THREE.Vector3(), ln = new THREE.Vector3(), lc = new THREE.Vector3(), lj = new THREE.Vector3();
 let frameNo = 0, headSplit = 0;
 // where each label's text was drawn this frame, so a tap can be matched to a label
+// (key: the label's English text; p: its anchor in head coordinates, absent for the hand labels)
 let boxes = [];
 export function pickLabel(x, y) {
   let best = null, bestD = 1e9;
@@ -23,7 +24,7 @@ export function pickLabel(x, y) {
     const dx = Math.max(b.x0 - x, 0, x - b.x1), dy = Math.max(b.y0 - y, 0, y - b.y1), d = Math.hypot(dx, dy);
     const da = Math.hypot(b.ax - x, b.ay - y);            // tapping the anchor dot counts too
     const dist = Math.min(d, da - 6);
-    if (dist < 14 && dist < bestD) { bestD = dist; best = b.key; }
+    if (dist < 14 && dist < bestD) { bestD = dist; best = b; }
   }
   return best;
 }
@@ -51,7 +52,7 @@ function collectHeadLabels(lens) {
       if (solid && facing < 0.12) continue;                                                // on the far side
       const s = toScreen(lp);
       if (lens && Math.hypot(s.x - lens.x, s.y - lens.y) > lens.r) continue;
-      if (!best || facing > best.facing) best = { text: L.t, color: LABEL_COLOR[L.layer], ax: s.x, ay: s.y, facing };
+      if (!best || facing > best.facing) best = { text: L.t, color: LABEL_COLOR[L.layer], ax: s.x, ay: s.y, facing, p };
     }
     if (best) out.push(best);
   }
@@ -107,7 +108,7 @@ function layoutLabels(g, items, cx, halfWidth, key, splitX) {
       g.textAlign = side === "left" ? "right" : "left";
       g.strokeStyle = "rgba(4,7,13,.9)"; g.lineWidth = 3.5; g.strokeText(it.label, tx, y);
       g.fillText(it.label, tx, y);
-      boxes.push({ key: it.text, ax: it.ax, ay: it.ay, x0: side === "left" ? tx - it.w : tx, x1: side === "left" ? tx : tx + it.w, y0: y - 9, y1: y + 9 });
+      boxes.push({ key: it.text, p: it.p, ax: it.ax, ay: it.ay, x0: side === "left" ? tx - it.w : tx, x1: side === "left" ? tx : tx + it.w, y0: y - 9, y1: y + 9 });
     }
   }
 }

@@ -12,6 +12,7 @@ import { startLive } from "./loops/live.js";
 import { startDemo } from "./loops/demo.js";
 import { initQuality } from "./quality.js";
 import { initUI, keepAwake, KIOSK } from "./ui.js";
+import { syncTri } from "./hud/triview.js";
 import { applyLanguage } from "./i18n.js";
 import { setProgress } from "./net.js";
 
@@ -37,7 +38,7 @@ window.addEventListener("resize", () => {
   resize();                                                // the stage can keep its size while the window crops it differently
 });
 // (the quick bar only exists while running, and the label area depends on its height: measure again)
-const setRunning = on => { document.body.classList.toggle("running", on); keepAwake(on); resize(); };
+const setRunning = on => { document.body.classList.toggle("running", on); keepAwake(on); syncTri(); resize(); };
 let retryTimer = 0;
 
 // Load and build the 3D anatomy once; later calls reuse it.

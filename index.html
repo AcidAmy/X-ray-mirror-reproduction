@@ -42,6 +42,29 @@
   <!-- short pointer shown when the labels are switched on -->
   <div id="tip" hidden data-i18n="info.tap">Tap a label to learn more</div>
 
+  <!-- three-view locator: sections of the head model through one point, tied to the 3D head by a crosshair -->
+  <aside id="tri" hidden>
+    <div class="triviews">
+      <div class="triview" style="--c:#ff9a62"><b data-i18n="tri.axial">Axial</b><canvas id="tri_c_axial"></canvas><input id="tri_s_axial" type="range" step="0.1" data-i18n-title="tri.slice"></div>
+      <div class="triview" style="--c:#7fe08a"><b data-i18n="tri.coronal">Coronal</b><canvas id="tri_c_coronal"></canvas><input id="tri_s_coronal" type="range" step="0.1" data-i18n-title="tri.slice"></div>
+      <div class="triview" style="--c:#7fd1ff"><b data-i18n="tri.sagittal">Sagittal</b><canvas id="tri_c_sagittal"></canvas><input id="tri_s_sagittal" type="range" step="0.1" data-i18n-title="tri.slice"></div>
+    </div>
+    <div class="triread">
+      <label><span data-i18n="mri.mode">Background</span> <select id="tri_mode"><option value="model" data-i18n="mri.model">Model</option><option value="mri" data-i18n="mri.image">MRI</option><option value="blend" data-i18n="mri.blend">MRI + outlines</option></select></label>
+      <label><input id="tri_texture" type="checkbox"> <span data-i18n="mri.texture">MRI on 3D planes</span></label>
+      <label><span data-i18n="mri.contrast">Contrast</span> <input id="tri_contrast" type="range" min="0.5" max="2" step="0.1" value="1"></label>
+      <span id="mri_status" role="status" aria-live="polite"></span>
+      <button id="mri_retry" class="linkbtn" hidden data-i18n="mri.retry">Retry MRI</button>
+      <span class="mri-credit" data-i18n="mri.note"></span>
+      <span id="tri_pos"></span>
+      <span id="tri_tissue"></span>
+      <button class="linkbtn" id="tri_near" type="button" hidden></button>
+      <select id="tri_jump"></select>
+      <p class="small" data-i18n="tri.note"></p>
+      <button class="linkbtn" id="tri_close" type="button" data-i18n="drawer.close">Close</button>
+    </div>
+  </aside>
+
   <div id="hint" hidden>
     <b data-i18n="hint.title">Step in front of the camera</b>
     <span data-i18n="hint.sub">Face the screen and hold up a hand</span>
@@ -63,6 +86,7 @@
     <i class="sep"></i><i class="rowbreak"></i>
     <button id="q_style" type="button">Solid</button>
     <button id="q_labels" type="button" data-i18n="q.labels">Labels</button>
+    <button id="q_tri" type="button" data-i18n="q.tri">Sections</button>
     <i class="sep"></i>
     <button id="q_settings" type="button" aria-expanded="false" data-i18n="q.settings">Settings</button>
     <button id="q_full" type="button">Full screen</button>
@@ -141,6 +165,7 @@
       <p class="small" data-i18n="about.model"></p>
       <p class="small" style="margin-top:8px" data-i18n="about.privacy"></p>
       <p class="small" style="margin-top:8px" data-i18n="about.credit"></p>
+      <p class="small" style="margin-top:8px">MRI: Copyright (C) 1993–2004 Louis Collins, McConnell Brain Imaging Centre, Montreal Neurological Institute, McGill University. <a href="https://nist.mni.mcgill.ca/icbm-152-nonlinear-atlases-2009/" target="_blank" rel="noopener">ICBM152 · source &amp; license</a></p>
     </div>
   </aside>
 </div>

@@ -4,7 +4,7 @@ import { t, onLanguage } from "./i18n.js";
 
 export const DEFAULTS = { skull: true, brain: false, muscles: false, eyes: true, outline: true, hands: true,
                           style: "xray", bright: 1, real: 0.12, feather: 0.2, reveal: "whole", cut: 0.5, showdata: false,
-                          fs: 1, fw: 1, fh: 1, fd: 1, fx: 0, fy: 0, fz: 0, labels: false, autofit: true, bilingual: false };
+                          fs: 1, fw: 1, fh: 1, fd: 1, fx: 0, fy: 0, fz: 0, labels: false, autofit: true, bilingual: false, tri: false };
 export const LAYERS = ["skull", "brain", "muscles", "eyes", "outline", "hands"];
 export const SLIDERS = ["bright", "real", "feather", "cut", "fs", "fw", "fh", "fd", "fx", "fy", "fz"];
 const STYLES = ["xray", "solid"], REVEALS = ["whole", "left", "right", "top", "bottom", "lens"];
