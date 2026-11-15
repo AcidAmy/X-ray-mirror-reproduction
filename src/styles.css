@@ -157,3 +157,7 @@ body:not(.running) #tri { display:none; }
 /* Keep the new MRI controls inside the existing panel footprint. */
 @media (min-width:701px) { .triread { max-height:calc(var(--tv) + 22px); overflow-y:auto; } }
 @media (max-width:700px) { #tri { max-height:calc(100dvh - 220px); overflow-y:auto; } }
+
+.triread details { width:100%; font-size:11px; }
+.triread details p { color:var(--dim); line-height:1.5; }
+#tri_voxel { font-weight:600; color:#ffc2d6; }

@@ -58,6 +58,15 @@
       <span class="mri-credit" data-i18n="mri.note"></span>
       <span id="tri_pos"></span>
       <span id="tri_tissue"></span>
+      <span id="tri_voxel"></span>
+      <details><summary data-i18n="play.title">Exhibit interaction</summary>
+        <label><input type="checkbox" id="tri_fixed"><span data-i18n="play.fixed">Fixed screen plane</span></label>
+        <button type="button" class="linkbtn" id="tri_reanchor" data-i18n="play.anchor">Re-anchor</button>
+        <label><input type="checkbox" id="tri_gesture"><span data-i18n="play.hand">Pinch to change slice</span></label>
+        <select id="tri_axis" aria-label="Gesture plane"><option value="1" data-i18n="tri.axial">Axial</option><option value="2" data-i18n="tri.coronal">Coronal</option><option value="0" data-i18n="tri.sagittal">Sagittal</option></select>
+        <span id="tri_gesture_status" role="status"></span>
+        <p data-i18n="play.note"></p>
+      </details>
       <button class="linkbtn" id="tri_near" type="button" hidden></button>
       <select id="tri_jump"></select>
       <p class="small" data-i18n="tri.note"></p>

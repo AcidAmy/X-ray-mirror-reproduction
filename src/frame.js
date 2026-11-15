@@ -12,6 +12,8 @@ import { lensFor } from "./reveal.js";
 import { drawLabels } from "./hud/labels.js";
 import { drawTrackingData, countFrame } from "./hud/data.js";
 
+import { updateSectionInteraction } from "./hud/triview.js";
+
 let pointer = null;
 export function initPointer() {
   const stage = $("stage");
@@ -34,6 +36,7 @@ export function renderFrame(now, faceLms, hands, sides, handsWorld = []) {
   if (handMask && S.hands) drawHandVeil(sg, handMask, (1 - S.real) * 0.92);
   if (!head.found) headGroup.visible = false;
   applyLayers();
+  updateSectionInteraction(now,hands,!!faceLms && head.found);
 
   // x-ray lens: a round window; outside it you see the plain camera picture
   const { mask, lens } = lensFor(hands, pointer, faceLms);

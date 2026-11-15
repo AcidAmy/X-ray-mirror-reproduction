@@ -3,6 +3,20 @@
 const KEY = "xr_lang";
 const UI = {
   en: {
+    "voxel.read": "MRI voxel: {name}",
+    "voxel.0": "unlabelled / outside coverage",
+    "voxel.1": "CSF",
+    "voxel.2": "grey matter",
+    "voxel.3": "white matter",
+    "voxel.pending": "MRI voxel: select MRI to load labels",
+    "play.title": "Exhibit interaction",
+    "play.fixed": "Fixed screen plane (MRI)",
+    "play.anchor": "Re-anchor at current head",
+    "play.hand": "Pinch to change slice",
+    "play.waiting": "Use one hand; pinch thumb and index finger",
+    "play.dragging": "Pinching: move up/down; release to stop",
+    "play.note": "Fixed mode: move your head through the plane; hand control pauses. Tracking loss re-anchors on return. Pinch mode: use one hand, move up/down to change the selected anatomical slice. MRI tissue classes come from atlas probabilities, not diagnoses.",
+
     "mri.mode": "Background",
     "mri.model": "Model sections",
     "mri.image": "MRI",
@@ -13,7 +27,7 @@ const UI = {
     "mri.ready": "ICBM152 · T1 MRI",
     "mri.error": "MRI unavailable; showing model sections.",
     "mri.retry": "Retry MRI",
-    "mri.note": "McGill ICBM152: population-average MRI, approximately aligned to this model. Different anatomy; not your scan. Tissue/nearest-label readouts refer to the 3D model.",
+    "mri.note": "McGill ICBM152: population-average MRI, approximately aligned to this model. Different anatomy; not your scan. Model tissue/nearest labels refer to the mesh; MRI voxels are shown separately.",
 
     "intro.text": "See the skull, brain and muscles inside your own head, tracked live through your camera. Hold a hand up to see its bones.",
     "intro.privacy": "Your video is processed on this device only. Nothing is uploaded or recorded.",
@@ -59,6 +73,20 @@ const UI = {
     "e.load": "Could not load the {stage}: {msg}", "stage.camera": "camera", "stage.engine": "3D engine", "stage.trackers": "trackers"
   },
   zh: {
+    "voxel.read": "MRI 体素：{name}",
+    "voxel.0": "未标注／覆盖范围外",
+    "voxel.1": "脑脊液",
+    "voxel.2": "灰质",
+    "voxel.3": "白质",
+    "voxel.pending": "MRI 体素：选择 MRI 后加载标签",
+    "play.title": "展台交互",
+    "play.fixed": "固定屏幕切面（MRI）",
+    "play.anchor": "在当前头部重新定位",
+    "play.hand": "捏合手指换层",
+    "play.waiting": "伸出一只手，捏合拇指和食指",
+    "play.dragging": "已捏合：上下移动换层，松开停止",
+    "play.note": "固定模式下移动头部穿过切面，手势换层暂停；追踪丢失后重新定位。手势模式用单手捏合并上下移动，控制所选解剖层面。MRI 组织类别来自图谱概率，非诊断结果。",
+
     "mri.mode": "底图",
     "mri.model": "模型剖面",
     "mri.image": "MRI 影像",
@@ -69,7 +97,7 @@ const UI = {
     "mri.ready": "ICBM152 · T1 MRI",
     "mri.error": "MRI 暂不可用，当前显示模型剖面。",
     "mri.retry": "重试加载 MRI",
-    "mri.note": "McGill ICBM152 群体平均 MRI，与模型近似对齐；来自不同解剖数据，并非你的扫描。组织及最近标注仍指三维模型。",
+    "mri.note": "McGill ICBM152 群体平均 MRI，与模型近似对齐；来自不同解剖数据，并非你的扫描。模型组织及最近标注指三维模型，MRI 体素单独显示。",
 
     "intro.text": "通过摄像头实时看到自己头部里面的颅骨、大脑和肌肉。举起一只手，还能看到手骨。",
     "intro.privacy": "视频只在本机处理，不会上传，也不会录制。",

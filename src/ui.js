@@ -6,7 +6,7 @@ import { S, save, resetAll } from "./settings.js";
 import { t, lang, setLanguage, onLanguage } from "./i18n.js";
 import { pickLabel } from "./hud/labels.js";
 import { labelInfo } from "./anatomy/terms.js";
-import { initTriview, syncTri, setCursor } from "./hud/triview.js";
+import { initTriview, syncTri, setCursor, resetSectionInteraction } from "./hud/triview.js";
 
 export const KIOSK = new URLSearchParams(location.search).has("kiosk");
 const HINT_AFTER_MS = 2500;        // nobody in view for this long -> show the hint
@@ -92,7 +92,7 @@ export function setPresence(present, now) {
   if (!absentSince) absentSince = now;
   const gone = now - absentSince;
   if (gone > HINT_AFTER_MS) $("hint").hidden = false;
-  if (KIOSK && !wasReset && gone > RESET_AFTER_MS) { wasReset = true; tipLearned = false; resetAll(); setDrawer(false); hideInfo(); }
+  if (KIOSK && !wasReset && gone > RESET_AFTER_MS) { wasReset = true; tipLearned = false; resetAll(); resetSectionInteraction(); setDrawer(false); hideInfo(); }
 }
 export function clearPresence() { absentSince = 0; $("hint").hidden = true; }
 

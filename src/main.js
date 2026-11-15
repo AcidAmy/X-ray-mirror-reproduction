@@ -12,7 +12,7 @@ import { startLive } from "./loops/live.js";
 import { startDemo } from "./loops/demo.js";
 import { initQuality } from "./quality.js";
 import { initUI, keepAwake, KIOSK } from "./ui.js";
-import { syncTri } from "./hud/triview.js";
+import { syncTri, resetSectionInteraction } from "./hud/triview.js";
 import { applyLanguage } from "./i18n.js";
 import { setProgress } from "./net.js";
 
@@ -53,6 +53,7 @@ function boot() {
 }
 
 function haltLoop() {
+  resetSectionInteraction();
   if (stopLoop) { stopLoop(); stopLoop = null; }
   resetHead(); clearStage(); resetFps();
 }

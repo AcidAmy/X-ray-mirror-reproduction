@@ -14,7 +14,12 @@ import { t, lang, onLanguage } from "../i18n.js";
 import { labelText } from "../anatomy/terms.js";
 import { sliceMesh, insideSection, surroundedBy } from "../anatomy/section.js";
 
+import { sampleVolume } from "../anatomy/volume.js";
+import { pinchStep } from "../anatomy/interaction.js";
+import { view } from "../state.js";
+import { updateFixedSection, resetFixedSection } from "./fixed-section.js";
 import { loadMRI, getVolume, mriSlice } from "./mri.js";
+let fixedOn=false, gestureOn=false, gestureAxis=1, pinch={active:false}, lastInteraction=-Infinity;
 let imageMode = "model", textureOn = false, contrast = 1, mriStatus = "", loadingMRI = false;
 async function requestMRI() {
   if (loadingMRI) return;
@@ -155,6 +160,8 @@ function drawView(vi) {
 const signed = (v, pos, neg) => t("dir." + (v >= 0 ? pos : neg)) + " " + Math.abs(v).toFixed(1);
 function drawAll() {
   if (!ready() || $("tri").hidden) return;
+  const volume=getVolume();
+  $("tri_voxel").textContent=volume ? t("voxel.read",{name:t("voxel."+sampleVolume(volume,cur,true))}) : t("voxel.pending");
   let part = tissueAt();
   nearest = nearestLabel(part);
   // The label anchors sit on the surface of their structure, where "inside or outside" is a coin toss.
@@ -198,7 +205,7 @@ function buildMarker() {
 }
 function placeMarker() {
   if (!marker) return;
-  marker.visible = S.tri;
+  marker.visible = S.tri && !fixedOn;
   const mid = [0, 1, 2].map(i => (box[0][i] + box[1][i]) / 2);
   marker.planes.forEach((m, axis) => { m.position.fromArray(mid); m.position.setComponent(axis, cur[axis]); });
   marker.dot.position.fromArray(cur);
@@ -261,6 +268,10 @@ export function syncTri() {
 // pick(key): the visitor asked about a structure (clicked the "nearest label" line or chose one from the list).
 export function initTriview(pick) {
   onPick = pick;
+  $("tri_fixed").onchange=e=>{fixedOn=e.target.checked;resetFixedSection();if(fixedOn&&!getVolume())requestMRI();placeMarker();};
+  $("tri_reanchor").onclick=resetFixedSection;
+  $("tri_gesture").onchange=e=>{gestureOn=e.target.checked;pinch={active:false};};
+  $("tri_axis").onchange=e=>{gestureAxis=Number(e.target.value);pinch={active:false};};
   $("tri_mode").onchange = e => { imageMode=e.target.value; if (imageMode!=="model" && !getVolume()) requestMRI(); drawAll(); };
   $("tri_texture").onchange = e => { textureOn=e.target.checked; if (textureOn && !getVolume()) requestMRI(); drawAll(); };
   $("tri_contrast").oninput = e => { contrast=Number(e.target.value); drawAll(); };
@@ -305,4 +316,21 @@ export function initTriview(pick) {
   $("tri_close").onclick = () => { $("q_tri").click(); };
   onLanguage(() => { updateMRIStatus(); if (ready()) { fillJump(); drawAll(); } });
   new ResizeObserver(drawAll).observe($("tri"));
+}
+
+// Called after head pose update. Manual interaction stays available; two hands disable gesture control.
+export const wantsSectionHands=()=>S.tri && gestureOn && !fixedOn;
+export function updateSectionInteraction(now,hands,found){
+  updateFixedSection(now,S.tri&&fixedOn,found,contrast);
+  if(!S.tri || !ready() || !gestureOn || fixedOn || !found){pinch={active:false};$("tri_gesture_status").textContent="";return;}
+  pinch=pinchStep(pinch,hands,cur[gestureAxis],[box[0][gestureAxis],box[1][gestureAxis]],view.W/view.H);
+  $("tri_gesture_status").textContent=t(pinch.active?"play.dragging":"play.waiting");
+  if(now-lastInteraction<100 || Math.abs(pinch.value-cur[gestureAxis])<.1)return;
+  lastInteraction=now;const p=[];p[gestureAxis]=Math.round(pinch.value*10)/10;setCursor(p);
+}
+
+export function resetSectionInteraction(){
+  fixedOn=false;gestureOn=false;pinch={active:false};resetFixedSection();
+  $("tri_fixed").checked=false;$("tri_gesture").checked=false;$("tri_gesture_status").textContent="";
+  placeMarker();
 }

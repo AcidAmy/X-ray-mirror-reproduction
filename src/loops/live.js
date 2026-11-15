@@ -10,6 +10,8 @@ import { renderFrame } from "../frame.js";
 import { addFrameCost, setTarget } from "../quality.js";
 import { setPresence, clearPresence } from "../ui.js";
 
+import { wantsSectionHands } from "../hud/triview.js";
+
 // Returns a function that stops the loop.
 export function startLive() {
   const video = $("video"), frame = $("frame"), fg = frame.getContext("2d");
@@ -40,7 +42,7 @@ export function startLive() {
       } else { faceLms = null; if (!lostAt) lostAt = now; if (now - lostAt > 250) head.found = false; }
       // Hand tracking costs about as much as face tracking. While no hand is in view, only look for one on
       // every third frame; as soon as one appears it is tracked on every frame again.
-      if (trackers.hand && (S.hands || S.reveal === "lens" || S.showdata) && ++handGap >= 3) {
+      if (trackers.hand && (S.hands || S.reveal === "lens" || S.showdata || wantsSectionHands()) && ++handGap >= 3) {
         const hr = trackers.hand.detectForVideo(frame, now);
         hands = hr.landmarks || []; handsWorld = hr.worldLandmarks || [];
         handGap = hands.length ? 3 : 0;
