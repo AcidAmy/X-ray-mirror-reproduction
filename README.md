@@ -2,7 +2,9 @@
 
 在浏览器里用摄像头实时"透视"自己的头和手：颅骨、大脑、面部肌肉、眼球和手骨的真实 3D 模型被配准到你的脸和手上，随头部转动、张嘴和手指弯曲同步运动。
 
-本项目把原始的单文件页面 `original/X-Ray Mirror.html` 拆分成了一个 Vite 工程。模型数据、几何解码、着色器、配准和标签算法都原样保留，没有用任何简化几何体或图片替代。
+本项目以原始单文件页面 `original/X-Ray Mirror.html` 为基础拆分成 Vite 工程，初始版本保留原模型数据及解码、着色器、配准和标签实现，随后增加跟踪改进、双语讲解、CT/MRI 教学视图和交互。它是基于原件的衍生开发，不是全部从零原创。
+
+**授权核查中（2026-11-16）**：已确认下载原件与仓库文件的 SHA-256 一致，但尚未确认原程序的改编和再分发许可；BodyParts3D 的数据许可不等于整个程序的许可。来源证据、联系草稿和待办见 [NOTICE.md](NOTICE.md)。
 
 - 视频只在本机浏览器内处理，不会上传到任何服务器。
 - 解剖模型是一位成年人的真实 3D 数据集，按比例贴合到你的头部，展示的是结构的典型位置，不是对你本人的扫描，也不是医疗工具。
@@ -254,6 +256,8 @@ npm run build
 
 **Netlify 或 Cloudflare Pages（推荐）**：在托管平台上连接本仓库，构建命令 `npm run build`，发布目录 `dist`。仓库里已有 `netlify.toml` 和 `public/_headers`（缓存策略、只允许本页面使用摄像头等响应头），两个平台都会读取。
 
+部署记录（2026-11-16）：用户确认已托管到 Netlify；本次未获得生产网址，未独立验证线上访问、摄像头和离线缓存。部署完成不代表授权核查完成。
+
 **其他静态服务器**：把 `dist/` 整个放上去即可。注意三点：
 
 1. **必须用 HTTPS**（或 `localhost`），否则浏览器不允许访问摄像头。
@@ -272,7 +276,7 @@ npm run build
 
 ## 数据来源与许可
 
-解剖模型：BodyParts3D，© The Database Center for Life Science，以 CC Attribution-Share Alike 2.1 Japan 许可发布。模型经过简化和重新对齐。再分发 `public/anatomy/` 和 `original/` 中的数据时需要保留这段署名，并沿用相同许可。
+解剖模型：BodyParts3D，© The Database Center for Life Science；取得的原件标注 CC Attribution-Share Alike 2.1 Japan，模型经过简化和重新对齐。分发这些数据时需保留署名并遵守相同方式共享要求；这不授予 `original/` 中程序代码的再分发权。官方归档当前许可与取得版本声明存在差异，具体版本核查见 [NOTICE.md](NOTICE.md)。
 
 ## 展台交互（阶段 6c）
 
